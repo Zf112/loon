@@ -1,4 +1,6 @@
 // 微信综合保活脚本（语音 + 消息 + 朋友圈 + 公众号 + 时间日志）
+// 延迟5秒，确保辅助唤醒脚本已完成
+await new Promise(resolve => setTimeout(resolve, 5000));
 console.log("微信综合保活脚本执行开始：" + new Date().toLocaleString());
 
 const urls = [
