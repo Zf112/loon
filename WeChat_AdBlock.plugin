@@ -1,15 +1,15 @@
-#!name=微信朋友圈公众号去广告超级增强版
-#!desc=结合请求阻断和响应重写，深度屏蔽微信朋友圈、公众号广告及腾讯元宝、DeepSee、美团等第三方广告，支持多接口和多格式响应
-#!version=1.1
-#!author=Zf112
+#!name=WeChat_AdBlock_AutoUpdate
+#!desc=微信朋友圈和公众号广告屏蔽，支持自动更新脚本，内嵌响应体重写脚本
+#!version=1.0
+#!author=ChatGPT + Zf112整合
 
 [Rule]
-# 微信基础域名直连，避免误拦截业务
+# 微信基础域名直连，防止误封
 DOMAIN-SUFFIX,weixin.qq.com,DIRECT
 DOMAIN-SUFFIX,mp.weixin.qq.com,DIRECT
 DOMAIN-SUFFIX,res.wx.qq.com,DIRECT
 
-# 广告及第三方广告域名阻断（可扩展）
+# 广告及第三方广告域名阻断
 DOMAIN-SUFFIX,ad.weixin.qq.com,REJECT
 DOMAIN-SUFFIX,micromsgad.com,REJECT
 DOMAIN-SUFFIX,wechatad.com,REJECT
@@ -17,46 +17,34 @@ DOMAIN-SUFFIX,adsame.cn,REJECT
 DOMAIN-SUFFIX,admaster.com.cn,REJECT
 DOMAIN-SUFFIX,yuanbao.qq.com,REJECT
 DOMAIN-SUFFIX,deepsee.qq.com,REJECT
-DOMAIN-SUFFIX,deepsee.qq.com.cn,REJECT
 DOMAIN-SUFFIX,meituan.com,REJECT
 DOMAIN-SUFFIX,dp.meituan.com,REJECT
+DOMAIN-SUFFIX,baidu.com,REJECT
+DOMAIN-SUFFIX,toutiao.com,REJECT
+DOMAIN-SUFFIX,byteimg.com,REJECT
+DOMAIN-SUFFIX,snssdk.com,REJECT
+DOMAIN-SUFFIX,pstatp.com,REJECT
+DOMAIN-SUFFIX,ixigua.com,REJECT
 
 [Script]
-# 请求阻断，拦截广告相关请求
-http-request
-regex=^https?:\/\/([^\/]*\.)?(mp|weixin|micromsgad|wechatad|adsame|yuanbao|deepsee|meituan|dp)\.qq\.com\/.*(ad|promo|advertise|track|banner|click|stat|report).*
-script-name=block-ad.js
-timeout=6
-tag=微信广告阻断
+# 响应体重写，远程拉取脚本屏蔽广告数据
+http-response ^https?:\/\/(mp|weixin)\.weixin\.qq\.com\/mp\/profile_ext
+script-url=https://raw.githubusercontent.com/Zf112/loon/main/wechat_adblock_response.js
+timeout=10
+tag=微信公众号广告屏蔽
 
-# 响应重写 - 公众号文章接口（微信mp）
-http-response
-regex=^https?:\/\/mp\.weixin\.qq\.com\/s.*
-script-name=wechat-ad-remove.js
-timeout=6
-tag=公众号广告重写
+http-response ^https?:\/\/(mp|weixin)\.weixin\.qq\.com\/mp\/getappmsgext
+script-url=https://raw.githubusercontent.com/Zf112/loon/main/wechat_adblock_response.js
+timeout=10
+tag=微信公众号文章广告屏蔽
 
-# 响应重写 - 朋友圈数据接口示例（可根据版本扩展）
-http-response
-regex=^https?:\/\/weixin\.qq\.com\/cgi-bin\/mmgame-bin\/wxagame\/.*
-script-name=wechat-ad-remove.js
-timeout=6
-tag=朋友圈广告重写
+http-response ^https?:\/\/weixin\.qq\.com\/cgi-bin\/mmbiz-bin\/
+script-url=https://raw.githubusercontent.com/Zf112/loon/main/wechat_adblock_response.js
+timeout=10
+tag=微信朋友圈广告屏蔽
 
 [Script-Content]
-#!name=block-ad.js
-// 请求阻断，直接返回204空响应阻断广告请求
-console.log("[广告屏蔽] 请求阻断: " + $request.url);
-$done({
-  status: 204,
-  body: "",
-  headers: {
-    "Content-Type": "text/plain"
-  }
-});
-
-#!name=wechat-ad-remove.js
-// 响应重写，解析响应体，删除广告相关字段，支持JSON和部分非JSON文本格式
+#!name=wechat_adblock_response.js
 (function() {
   if (typeof $response === "undefined" || !$response.body) {
     $done({});
@@ -64,71 +52,36 @@ $done({
   }
   try {
     let body = $response.body;
+    let obj = JSON.parse(body);
 
-    // 尝试解析 JSON
-    let obj = null;
-    try {
-      obj = JSON.parse(body);
-    } catch(e) {
-      // 不是 JSON，尝试提取json片段或直接返回不修改
-      // 这里可以按需扩展自定义处理非JSON响应
-      $done({});
-      return;
-    }
-
-    // 删除广告字段集合，结合常见和扩展字段
-    const adFields = [
-      "advertisement",
-      "advertisements",
-      "ad",
-      "ads",
-      "banner",
-      "bizAdData",
-      "recommendInfo",
-      "promoteInfo",
-      "adInfo",
-      "adList",
-      "adsInfo",
-      "adData",
-      "advertiseInfo"
-    ];
-
-    // 遍历删除字段
-    adFields.forEach(field => {
-      if (obj[field]) {
-        console.log(`[广告重写] 删除字段: ${field}`);
-        delete obj[field];
-      }
-      // 嵌套对象字段特殊处理
-      if (obj.recommendInfo && obj.recommendInfo.advertisement) {
-        console.log("[广告重写] 删除recommendInfo.advertisement");
-        delete obj.recommendInfo.advertisement;
-      }
-      if (obj.recommendInfo && obj.recommendInfo.ad) {
-        console.log("[广告重写] 删除recommendInfo.ad");
-        delete obj.recommendInfo.ad;
-      }
-      if (obj.recommendInfo && obj.recommendInfo.promoteInfo) {
-        console.log("[广告重写] 删除recommendInfo.promoteInfo");
-        delete obj.recommendInfo.promoteInfo;
-      }
-    });
-
-    // 额外清理推荐列表中的广告项（如果有）
-    if (Array.isArray(obj.general_msg_list)) {
+    // 朋友圈广告过滤
+    if (obj.general_msg_list && Array.isArray(obj.general_msg_list)) {
       obj.general_msg_list = obj.general_msg_list.filter(item => {
-        if (item && item.app_msg_ext_info && item.app_msg_ext_info.is_ad === 1) {
-          console.log("[广告重写] 过滤 general_msg_list 广告项");
-          return false;
-        }
+        if (item?.app_msg_ext_info?.is_ad === 1) return false;
         return true;
       });
     }
 
-    // 返回处理后的响应体
+    // 公众号广告过滤
+    if (obj.advertisement_info && obj.advertisement_info.ad_type) {
+      obj.advertisement_info = null;
+    }
+
+    if (obj.ad_info && obj.ad_info.ads) {
+      obj.ad_info.ads = [];
+    }
+
+    if (obj.promotion_info) {
+      obj.promotion_info = null;
+    }
+
+    if (obj.recommend_info && obj.recommend_info.ads) {
+      obj.recommend_info.ads = [];
+    }
+
     $done({body: JSON.stringify(obj)});
-  } catch (err) {
-    console.log("[广告重写] 处理异常，跳过修改: " + err);
+  } catch (e) {
+    console.log("微信广告屏蔽脚本异常:", e);
     $done({});
   }
 })();
