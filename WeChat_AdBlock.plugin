@@ -1,15 +1,13 @@
 #!name=微信朋友圈公众号广告屏蔽增强版
 #!desc=全面屏蔽微信公众号、朋友圈广告及腾讯元宝、DeepSee、美团、百度、字节等多种广告请求
-#!version=1.3
-#!author=Zf112
+#!version=1.4
+#!author=ChatGPT
 
 [Rule]
-# 微信公众号及基础域名直连（防止误阻断业务）
 DOMAIN-SUFFIX,weixin.qq.com,DIRECT
 DOMAIN-SUFFIX,mp.weixin.qq.com,DIRECT
 DOMAIN-SUFFIX,res.wx.qq.com,DIRECT
 
-# 广告及第三方相关域名阻断（去重合并）
 DOMAIN-SUFFIX,ad.weixin.qq.com,REJECT
 DOMAIN-SUFFIX,micromsgad.com,REJECT
 DOMAIN-SUFFIX,wechatad.com,REJECT
@@ -27,7 +25,6 @@ DOMAIN-SUFFIX,snssdk.com,REJECT
 DOMAIN-SUFFIX,pstatp.com,REJECT
 DOMAIN-SUFFIX,ixigua.com,REJECT
 
-# 广告统计、跟踪及相关关键字阻断（去重合并）
 DOMAIN-KEYWORD,admsg,REJECT
 DOMAIN-KEYWORD,adwechat,REJECT
 DOMAIN-KEYWORD,ad,REJECT
@@ -40,17 +37,22 @@ DOMAIN-KEYWORD,stat,REJECT
 DOMAIN-KEYWORD,report,REJECT
 DOMAIN-KEYWORD,feed,REJECT
 DOMAIN-KEYWORD,share,REJECT
+DOMAIN-KEYWORD,wechat,REJECT
+DOMAIN-KEYWORD,wx,REJECT
+DOMAIN-KEYWORD,sns,REJECT
+DOMAIN-KEYWORD,timeline,REJECT
+DOMAIN-KEYWORD,moments,REJECT
 
 [Script]
-# 拦截广告请求，返回204阻断广告加载
 http-request
-regex=^https?:\/\/([^\/]*\.)?(mp|weixin|micromsgad|wechatad|adsame|yuanbao|deepsee|meituan|dp|admaster|baidu|toutiao|byteimg|snssdk|pstatp|ixigua)\.(qq\.com|com)\/.*(ad|advertisement|promo|promote|advertise|track|banner|click|stat|report|feed|share).*
+regex=^https?:\/\/([^\/]+\.)?(mp|weixin|micromsgad|wechatad|adsame|yuanbao|deepsee|meituan|dp|admaster|baidu|toutiao|byteimg|snssdk|pstatp|ixigua)(\.qq\.com|\.com)(\/.*)?(ad|advertisement|promo|promote|advertise|track|banner|click|stat|report|feed|share|wechat|wx|sns|timeline|moments).*
 script-name=block-wechat-ad.js
 timeout=6
 tag=微信朋友圈公众号广告屏蔽增强
 
 [Script-Content]
 #!name=block-wechat-ad.js
+console.log("[广告屏蔽] 拦截请求: " + $request.url);
 $done({
   status: 204,
   body: "",
