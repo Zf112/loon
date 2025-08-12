@@ -1,15 +1,15 @@
-#!name=WeChat_AdBlock_AutoUpdate
-#!desc=微信朋友圈和公众号广告屏蔽，支持自动更新脚本，内嵌响应体重写脚本
-#!version=1.0
-#!author=ChatGPT + Zf112整合
+#!name=微信朋友圈公众号广告屏蔽+保活增强版
+#!desc=全面屏蔽朋友圈、公众号广告，屏蔽腾讯元宝、DeepSee、美团、百度、字节跳动、B站广告，含定时保活
+#!version=2.0
+#!author=Zf112整合增强版
 
 [Rule]
-# 微信基础域名直连，防止误封
+# 基础业务域名直连，避免误封
 DOMAIN-SUFFIX,weixin.qq.com,DIRECT
 DOMAIN-SUFFIX,mp.weixin.qq.com,DIRECT
 DOMAIN-SUFFIX,res.wx.qq.com,DIRECT
 
-# 广告及第三方广告域名阻断
+# 广告及第三方域名阻断（覆盖更多广告平台）
 DOMAIN-SUFFIX,ad.weixin.qq.com,REJECT
 DOMAIN-SUFFIX,micromsgad.com,REJECT
 DOMAIN-SUFFIX,wechatad.com,REJECT
@@ -17,6 +17,7 @@ DOMAIN-SUFFIX,adsame.cn,REJECT
 DOMAIN-SUFFIX,admaster.com.cn,REJECT
 DOMAIN-SUFFIX,yuanbao.qq.com,REJECT
 DOMAIN-SUFFIX,deepsee.qq.com,REJECT
+DOMAIN-SUFFIX,deepsee.qq.com.cn,REJECT
 DOMAIN-SUFFIX,meituan.com,REJECT
 DOMAIN-SUFFIX,dp.meituan.com,REJECT
 DOMAIN-SUFFIX,baidu.com,REJECT
@@ -25,63 +26,106 @@ DOMAIN-SUFFIX,byteimg.com,REJECT
 DOMAIN-SUFFIX,snssdk.com,REJECT
 DOMAIN-SUFFIX,pstatp.com,REJECT
 DOMAIN-SUFFIX,ixigua.com,REJECT
+DOMAIN-SUFFIX,bilibili.com,REJECT
+DOMAIN-SUFFIX,bilibili.cn,REJECT
+DOMAIN-SUFFIX,adsdk.com,REJECT
+
+# 广告关键字阻断（尽量涵盖所有常见广告关键词）
+DOMAIN-KEYWORD,admsg,REJECT
+DOMAIN-KEYWORD,adwechat,REJECT
+DOMAIN-KEYWORD,ad,REJECT
+DOMAIN-KEYWORD,promote,REJECT
+DOMAIN-KEYWORD,track,REJECT
+DOMAIN-KEYWORD,advertise,REJECT
+DOMAIN-KEYWORD,banner,REJECT
+DOMAIN-KEYWORD,click,REJECT
+DOMAIN-KEYWORD,stat,REJECT
+DOMAIN-KEYWORD,report,REJECT
+DOMAIN-KEYWORD,feed,REJECT
+DOMAIN-KEYWORD,share,REJECT
 
 [Script]
-# 响应体重写，远程拉取脚本屏蔽广告数据
-http-response ^https?:\/\/(mp|weixin)\.weixin\.qq\.com\/mp\/profile_ext
-script-url=https://raw.githubusercontent.com/Zf112/loon/main/wechat_adblock_response.js
-timeout=10
-tag=微信公众号广告屏蔽
+# 微信定时保活，防止转圈（间隔可根据需求调整）
+cron "*/15 * * * *" script-name=trigger-keepalive.js, timeout=10, tag=微信定时保活
 
-http-response ^https?:\/\/(mp|weixin)\.weixin\.qq\.com\/mp\/getappmsgext
-script-url=https://raw.githubusercontent.com/Zf112/loon/main/wechat_adblock_response.js
-timeout=10
-tag=微信公众号文章广告屏蔽
-
-http-response ^https?:\/\/weixin\.qq\.com\/cgi-bin\/mmbiz-bin\/
-script-url=https://raw.githubusercontent.com/Zf112/loon/main/wechat_adblock_response.js
-timeout=10
-tag=微信朋友圈广告屏蔽
+# 公众号文章及朋友圈广告响应体重写
+http-response ^https?:\/\/mp\.weixin\.qq\.com\/mp\/getappmsgext script-name=wechat_adblock.js, timeout=6, tag=微信广告屏蔽增强
 
 [Script-Content]
-#!name=wechat_adblock_response.js
+// trigger-keepalive.js
+const KEEPALIVE_URLS = [
+  "https://mp.weixin.qq.com/",
+  "https://weixin.qq.com/",
+  "https://res.wx.qq.com/zh_CN/htmledition/js/wxLogin.js"
+];
+const TIMEOUT = 6000;
+const LOG_ENABLE = false;
+
+async function httpGet(url) {
+  try {
+    if (typeof $task !== "undefined" && $task.fetch) {
+      let resp = await $task.fetch({ url, method: "GET", timeout: TIMEOUT });
+      if (LOG_ENABLE) console.log(`[微信保活] 请求 ${url} 返回状态: ${resp.statusCode || resp.status}`);
+      return resp.statusCode || resp.status;
+    } else if (typeof $httpClient !== "undefined") {
+      return new Promise((resolve) => {
+        $httpClient.get({ url, timeout: TIMEOUT }, (err, resp) => {
+          if (LOG_ENABLE) {
+            if (err) console.log(`[微信保活] 请求 ${url} 出错: ${err}`);
+            else console.log(`[微信保活] 请求 ${url} 返回状态: ${resp.status}`);
+          }
+          resolve(resp.status);
+        });
+      });
+    } else {
+      let resp = await fetch(url, { method: "GET", cache: "no-store", mode: "cors" });
+      if (LOG_ENABLE) console.log(`[微信保活] 请求 ${url} 返回状态: ${resp.status}`);
+      return resp.status;
+    }
+  } catch (e) {
+    if (LOG_ENABLE) console.log(`[微信保活] 请求 ${url} 异常: ${e}`);
+    return 0;
+  }
+}
+
+async function keepAlive() {
+  for (const url of KEEPALIVE_URLS) {
+    await httpGet(url);
+  }
+}
+
+(async () => {
+  await keepAlive();
+  if (typeof $done === "function") $done({});
+})();
+
+// wechat_adblock.js
 (function() {
   if (typeof $response === "undefined" || !$response.body) {
     $done({});
     return;
   }
   try {
-    let body = $response.body;
-    let obj = JSON.parse(body);
+    let obj = JSON.parse($response.body);
 
     // 朋友圈广告过滤
     if (obj.general_msg_list && Array.isArray(obj.general_msg_list)) {
-      obj.general_msg_list = obj.general_msg_list.filter(item => {
-        if (item?.app_msg_ext_info?.is_ad === 1) return false;
-        return true;
-      });
+      obj.general_msg_list = obj.general_msg_list.filter(item => !(item?.app_msg_ext_info?.is_ad === 1));
     }
 
-    // 公众号广告过滤
-    if (obj.advertisement_info && obj.advertisement_info.ad_type) {
-      obj.advertisement_info = null;
-    }
+    // 公众号广告过滤字段全面清理
+    if (obj.advertisement_info) obj.advertisement_info = null;
+    if (obj.ad_info && Array.isArray(obj.ad_info.ads)) obj.ad_info.ads = [];
+    if (obj.promotion_info) obj.promotion_info = null;
+    if (obj.recommend_info && Array.isArray(obj.recommend_info.ads)) obj.recommend_info.ads = [];
 
-    if (obj.ad_info && obj.ad_info.ads) {
-      obj.ad_info.ads = [];
-    }
+    // 去除其他可能的广告信息
+    if (obj.advertisements) obj.advertisements = [];
+    if (obj.advertisement) obj.advertisement = null;
 
-    if (obj.promotion_info) {
-      obj.promotion_info = null;
-    }
-
-    if (obj.recommend_info && obj.recommend_info.ads) {
-      obj.recommend_info.ads = [];
-    }
-
-    $done({body: JSON.stringify(obj)});
+    $done({ body: JSON.stringify(obj) });
   } catch (e) {
-    console.log("微信广告屏蔽脚本异常:", e);
+    if (LOG_ENABLE) console.log("微信广告屏蔽脚本异常:", e);
     $done({});
   }
 })();
