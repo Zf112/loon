@@ -1,0 +1,60 @@
+#!name=微信朋友圈公众号广告屏蔽增强版
+#!desc=全面屏蔽微信公众号、朋友圈广告及腾讯元宝、DeepSee、美团、百度、字节等多种广告请求
+#!version=1.3
+#!author=Zf112
+
+[Rule]
+# 微信公众号及基础域名直连（防止误阻断业务）
+DOMAIN-SUFFIX,weixin.qq.com,DIRECT
+DOMAIN-SUFFIX,mp.weixin.qq.com,DIRECT
+DOMAIN-SUFFIX,res.wx.qq.com,DIRECT
+
+# 广告及第三方相关域名阻断（去重合并）
+DOMAIN-SUFFIX,ad.weixin.qq.com,REJECT
+DOMAIN-SUFFIX,micromsgad.com,REJECT
+DOMAIN-SUFFIX,wechatad.com,REJECT
+DOMAIN-SUFFIX,adsame.cn,REJECT
+DOMAIN-SUFFIX,admaster.com.cn,REJECT
+DOMAIN-SUFFIX,yuanbao.qq.com,REJECT
+DOMAIN-SUFFIX,deepsee.qq.com,REJECT
+DOMAIN-SUFFIX,deepsee.qq.com.cn,REJECT
+DOMAIN-SUFFIX,meituan.com,REJECT
+DOMAIN-SUFFIX,dp.meituan.com,REJECT
+DOMAIN-SUFFIX,baidu.com,REJECT
+DOMAIN-SUFFIX,toutiao.com,REJECT
+DOMAIN-SUFFIX,byteimg.com,REJECT
+DOMAIN-SUFFIX,snssdk.com,REJECT
+DOMAIN-SUFFIX,pstatp.com,REJECT
+DOMAIN-SUFFIX,ixigua.com,REJECT
+
+# 广告统计、跟踪及相关关键字阻断（去重合并）
+DOMAIN-KEYWORD,admsg,REJECT
+DOMAIN-KEYWORD,adwechat,REJECT
+DOMAIN-KEYWORD,ad,REJECT
+DOMAIN-KEYWORD,promote,REJECT
+DOMAIN-KEYWORD,track,REJECT
+DOMAIN-KEYWORD,advertise,REJECT
+DOMAIN-KEYWORD,banner,REJECT
+DOMAIN-KEYWORD,click,REJECT
+DOMAIN-KEYWORD,stat,REJECT
+DOMAIN-KEYWORD,report,REJECT
+DOMAIN-KEYWORD,feed,REJECT
+DOMAIN-KEYWORD,share,REJECT
+
+[Script]
+# 拦截广告请求，返回204阻断广告加载
+http-request
+regex=^https?:\/\/([^\/]*\.)?(mp|weixin|micromsgad|wechatad|adsame|yuanbao|deepsee|meituan|dp|admaster|baidu|toutiao|byteimg|snssdk|pstatp|ixigua)\.(qq\.com|com)\/.*(ad|advertisement|promo|promote|advertise|track|banner|click|stat|report|feed|share).*
+script-name=block-wechat-ad.js
+timeout=6
+tag=微信朋友圈公众号广告屏蔽增强
+
+[Script-Content]
+#!name=block-wechat-ad.js
+$done({
+  status: 204,
+  body: "",
+  headers: {
+    "Content-Type": "text/plain"
+  }
+});
