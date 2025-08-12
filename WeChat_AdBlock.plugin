@@ -1,13 +1,15 @@
-#!name=微信朋友圈公众号广告屏蔽增强版
-#!desc=全面屏蔽微信公众号、朋友圈广告及腾讯元宝、DeepSee、美团、百度、字节等多种广告请求
-#!version=1.4
-#!author=ChatGPT
+#!name=微信朋友圈公众号及主流第三方广告屏蔽超级增强版
+#!desc=全面屏蔽微信公众号、朋友圈广告及腾讯、字节跳动、百度、美团、Bilibili、香奈儿、拼多多、阿里系等多种广告请求
+#!version=2.0
+#!author=Zf112
 
 [Rule]
+# 微信基础域名直连，避免误拦截业务
 DOMAIN-SUFFIX,weixin.qq.com,DIRECT
 DOMAIN-SUFFIX,mp.weixin.qq.com,DIRECT
 DOMAIN-SUFFIX,res.wx.qq.com,DIRECT
 
+# 广告及第三方广告域名阻断（大量补充）
 DOMAIN-SUFFIX,ad.weixin.qq.com,REJECT
 DOMAIN-SUFFIX,micromsgad.com,REJECT
 DOMAIN-SUFFIX,wechatad.com,REJECT
@@ -24,7 +26,28 @@ DOMAIN-SUFFIX,byteimg.com,REJECT
 DOMAIN-SUFFIX,snssdk.com,REJECT
 DOMAIN-SUFFIX,pstatp.com,REJECT
 DOMAIN-SUFFIX,ixigua.com,REJECT
+DOMAIN-SUFFIX,bilibili.com,REJECT
+DOMAIN-SUFFIX,hdslb.com,REJECT
+DOMAIN-SUFFIX,acgvideo.com,REJECT
+DOMAIN-SUFFIX,chanel.com,REJECT
+DOMAIN-SUFFIX,chanel.cn,REJECT
+DOMAIN-SUFFIX,chanel-cosmetics.cn,REJECT
+DOMAIN-SUFFIX,pinduoduo.com,REJECT
+DOMAIN-SUFFIX,alicdn.com,REJECT
+DOMAIN-SUFFIX,taobao.com,REJECT
+DOMAIN-SUFFIX,tmall.com,REJECT
+DOMAIN-SUFFIX,alibaba.com,REJECT
+DOMAIN-SUFFIX,alipay.com,REJECT
+DOMAIN-SUFFIX,qq.com,REJECT
+DOMAIN-SUFFIX,qqmail.com,REJECT
+DOMAIN-SUFFIX,so.com,REJECT
+DOMAIN-SUFFIX,googleadservices.com,REJECT
+DOMAIN-SUFFIX,doubleclick.net,REJECT
+DOMAIN-SUFFIX,ads.google.com,REJECT
+DOMAIN-SUFFIX,facebook.com,REJECT
+DOMAIN-SUFFIX,fbcdn.net,REJECT
 
+# 广告关键字阻断（极致补充）
 DOMAIN-KEYWORD,admsg,REJECT
 DOMAIN-KEYWORD,adwechat,REJECT
 DOMAIN-KEYWORD,ad,REJECT
@@ -42,13 +65,22 @@ DOMAIN-KEYWORD,wx,REJECT
 DOMAIN-KEYWORD,sns,REJECT
 DOMAIN-KEYWORD,timeline,REJECT
 DOMAIN-KEYWORD,moments,REJECT
+DOMAIN-KEYWORD,bili,REJECT
+DOMAIN-KEYWORD,chanel,REJECT
+DOMAIN-KEYWORD,pdd,REJECT
+DOMAIN-KEYWORD,taobao,REJECT
+DOMAIN-KEYWORD,tmall,REJECT
+DOMAIN-KEYWORD,alipay,REJECT
+DOMAIN-KEYWORD,alibaba,REJECT
+DOMAIN-KEYWORD,facebook,REJECT
+DOMAIN-KEYWORD,googleads,REJECT
 
 [Script]
 http-request
-regex=^https?:\/\/([^\/]+\.)?(mp|weixin|micromsgad|wechatad|adsame|yuanbao|deepsee|meituan|dp|admaster|baidu|toutiao|byteimg|snssdk|pstatp|ixigua)(\.qq\.com|\.com)(\/.*)?(ad|advertisement|promo|promote|advertise|track|banner|click|stat|report|feed|share|wechat|wx|sns|timeline|moments).*
+regex=^https?:\/\/([^\/]+\.)?(mp|weixin|micromsgad|wechatad|adsame|yuanbao|deepsee|meituan|dp|admaster|baidu|toutiao|byteimg|snssdk|pstatp|ixigua|bilibili|hdslb|acgvideo|chanel|pinduoduo|alicdn|taobao|tmall|alibaba|alipay|qq|qqmail|so|googleadservices|doubleclick|ads|facebook|fbcdn)\.(qq\.com|com|cn|net)(\/.*)?(ad|advertisement|promo|promote|advertise|track|banner|click|stat|report|feed|share|wechat|wx|sns|timeline|moments|bili|chanel|pdd|taobao|tmall|alipay|alibaba|facebook|googleads).*
 script-name=block-wechat-ad.js
 timeout=6
-tag=微信朋友圈公众号广告屏蔽增强
+tag=超级微信朋友圈公众号广告屏蔽
 
 [Script-Content]
 #!name=block-wechat-ad.js
