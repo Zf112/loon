@@ -71,16 +71,6 @@ IP-CIDR,111.13.0.0/16,DIRECT
 IP-CIDR,123.125.0.0/16,DIRECT
 
 # 你可以根据需要添加更多规则
-[MITM]
-# 排除所有微信实时通信和核心域名，避免解密延迟
-hostname = -mp.weixin.qq.com, -*.weixin.qq.com, -*.wx.qq.com, -*.wxapp.qq.com, -open.weixin.qq.com, -res.wx.qq.com, -*.mmbiz.qpic.cn, -*.mpvideo.qpic.cn, -*.vweixinf.tc.qq.com, -*.qlogo.cn, -*.qpic.cn, -*.tenpay.com, -*.tenpayimg.com, -*.long.weixin.qq.com, -*.short.weixin.qq.com, -*.voice.weixin.qq.com, -*.wxavs.qq.com, -*.webrtc.weixin.qq.com, -*.myqcloud.com
-skip-server-cert-verify = true
-
-# ====== 使用建议 ======
-# 1. 插件放在规则最前面，保证优先匹配。
-# 2. 保证这些域名不走代理（DIRECT），减少网络跳数。
-# 3. 移除 MITM 对实时通信域名的解密，减少延迟和 CPU 占用。
-# 4. 建议在 Loon -> Setting -> General 里保持 Wi-Fi/蜂窝网络直连低延迟路由。
 
 [Script]
 # 定时每5分钟执行一次
