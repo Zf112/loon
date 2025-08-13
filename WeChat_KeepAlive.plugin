@@ -26,25 +26,6 @@ DOMAIN-SUFFIX,liveplay.video.qq.com,DIRECT
 DOMAIN-SUFFIX,qcloud.com,DIRECT
 DOMAIN-SUFFIX,myqcloud.com,DIRECT
 
-# ====== 公众号文章 / 图片 / 视频 CDN ======
-DOMAIN-SUFFIX,mmbiz.qpic.cn,DIRECT
-DOMAIN-SUFFIX,mpvideo.qpic.cn,DIRECT
-DOMAIN-SUFFIX,mp-weixin-qq-com.a.bdydns.com,DIRECT
-DOMAIN-SUFFIX,vweixinf.tc.qq.com,DIRECT
-DOMAIN-SUFFIX,ugc.v.qq.com,DIRECT
-
-# ====== 头像 / 静态资源 ======
-DOMAIN-SUFFIX,qlogo.cn,DIRECT
-DOMAIN-SUFFIX,wx.qlogo.cn,DIRECT
-DOMAIN-SUFFIX,qpic.cn,DIRECT
-DOMAIN-SUFFIX,apd-pcdnwxapp.qpic.cn,DIRECT
-
-# ====== 小程序 / 支付 ======
-DOMAIN-SUFFIX,servicewechat.com,DIRECT
-DOMAIN-SUFFIX,tenpay.com,DIRECT
-DOMAIN-SUFFIX,tenpayimg.com,DIRECT
-DOMAIN-SUFFIX,wxsnsdy.wxs.qq.com,DIRECT
-
 # ====== 文件传输 ======
 DOMAIN-SUFFIX,file.wx.qq.com,DIRECT
 DOMAIN-SUFFIX,wework.qpic.cn,DIRECT
