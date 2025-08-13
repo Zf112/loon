@@ -2,9 +2,60 @@
 #!desc=微信请求触发和定时保活插件
 #!version=1.1
 #!author=Zf112
+[Rule]
+# ====== 核心微信直连（防转圈 + 降延迟）======
+DOMAIN,mp.weixin.qq.com,DIRECT
+DOMAIN-SUFFIX,weixin.qq.com,DIRECT
+DOMAIN-SUFFIX,wx.qq.com,DIRECT
+DOMAIN-SUFFIX,wxapp.qq.com,DIRECT
+DOMAIN-SUFFIX,open.weixin.qq.com,DIRECT
+DOMAIN-SUFFIX,res.wx.qq.com,DIRECT
 
-[Rule]
-[Rule]
+# ====== 消息推送 / 实时通信（低延迟关键）======
+# 消息推送
+DOMAIN-SUFFIX,long.weixin.qq.com,DIRECT
+DOMAIN-SUFFIX,short.weixin.qq.com,DIRECT
+# 语音通话
+DOMAIN-SUFFIX,voice.weixin.qq.com,DIRECT
+DOMAIN-SUFFIX,wxavs.qq.com,DIRECT
+# 视频通话/直播
+DOMAIN-SUFFIX,webrtc.weixin.qq.com,DIRECT
+DOMAIN-SUFFIX,liveplay.myqcloud.com,DIRECT
+DOMAIN-SUFFIX,liveplay.video.qq.com,DIRECT
+# UDP 直连（腾讯云）
+DOMAIN-SUFFIX,qcloud.com,DIRECT
+DOMAIN-SUFFIX,myqcloud.com,DIRECT
+
+# ====== 公众号文章 / 图片 / 视频 CDN ======
+DOMAIN-SUFFIX,mmbiz.qpic.cn,DIRECT
+DOMAIN-SUFFIX,mpvideo.qpic.cn,DIRECT
+DOMAIN-SUFFIX,mp-weixin-qq-com.a.bdydns.com,DIRECT
+DOMAIN-SUFFIX,vweixinf.tc.qq.com,DIRECT
+DOMAIN-SUFFIX,ugc.v.qq.com,DIRECT
+
+# ====== 头像 / 静态资源 ======
+DOMAIN-SUFFIX,qlogo.cn,DIRECT
+DOMAIN-SUFFIX,wx.qlogo.cn,DIRECT
+DOMAIN-SUFFIX,qpic.cn,DIRECT
+DOMAIN-SUFFIX,apd-pcdnwxapp.qpic.cn,DIRECT
+
+# ====== 小程序 / 支付 ======
+DOMAIN-SUFFIX,servicewechat.com,DIRECT
+DOMAIN-SUFFIX,tenpay.com,DIRECT
+DOMAIN-SUFFIX,tenpayimg.com,DIRECT
+DOMAIN-SUFFIX,wxsnsdy.wxs.qq.com,DIRECT
+
+# ====== 文件传输 ======
+DOMAIN-SUFFIX,file.wx.qq.com,DIRECT
+DOMAIN-SUFFIX,wework.qpic.cn,DIRECT
+
+# ====== 短链 ======
+DOMAIN-SUFFIX,mmbizurl.cn,DIRECT
+
+# ====== 腾讯通用 CDN ======
+DOMAIN-SUFFIX,ugdtimg.com,DIRECT
+DOMAIN-SUFFIX,gtimg.cn,DIRECT
+
 # 微信官方域名
 DOMAIN-SUFFIX,weixin.qq.com,DIRECT
 DOMAIN-SUFFIX,mp.weixin.qq.com,DIRECT
@@ -20,6 +71,16 @@ IP-CIDR,111.13.0.0/16,DIRECT
 IP-CIDR,123.125.0.0/16,DIRECT
 
 # 你可以根据需要添加更多规则
+[MITM]
+# 排除所有微信实时通信和核心域名，避免解密延迟
+hostname = -mp.weixin.qq.com, -*.weixin.qq.com, -*.wx.qq.com, -*.wxapp.qq.com, -open.weixin.qq.com, -res.wx.qq.com, -*.mmbiz.qpic.cn, -*.mpvideo.qpic.cn, -*.vweixinf.tc.qq.com, -*.qlogo.cn, -*.qpic.cn, -*.tenpay.com, -*.tenpayimg.com, -*.long.weixin.qq.com, -*.short.weixin.qq.com, -*.voice.weixin.qq.com, -*.wxavs.qq.com, -*.webrtc.weixin.qq.com, -*.myqcloud.com
+skip-server-cert-verify = true
+
+# ====== 使用建议 ======
+# 1. 插件放在规则最前面，保证优先匹配。
+# 2. 保证这些域名不走代理（DIRECT），减少网络跳数。
+# 3. 移除 MITM 对实时通信域名的解密，减少延迟和 CPU 占用。
+# 4. 建议在 Loon -> Setting -> General 里保持 Wi-Fi/蜂窝网络直连低延迟路由。
 
 [Script]
 # 定时每5分钟执行一次
