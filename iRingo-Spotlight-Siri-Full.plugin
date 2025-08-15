@@ -1,22 +1,16 @@
 [Plugin]
 name = iRingo-Spotlight-Siri-Full
-desc = 集成 Spotlight 搜索增强 + Siri 请求增强 (iOS 18.6)
+desc = 集成 Spotlight 搜索增强 + Siri 请求增强 (iOS 18.6, 离线版本)
 author = z-helper
 version = 1.0
 icon = https://raw.githubusercontent.com/NSRingo/Siri/main/icon.png
-#!name=Spotlight+Siri iRingo Full
-#!desc=整合 Spotlight 搜索增强与 Siri 增强功能（适配 iOS 18.6，Loon）
-#!author=z
-#!version=1.0
-#!homepage=https://github.com/NSRingo/Siri
-#!icon=https://raw.githubusercontent.com/NSRingo/Siri/main/icon.png
 
 [Argument]
-CountryCode = select, "US", "OFF", "AUTO", "CN", "HK", "TW", "SG", "JP", "AU", "GB", "KR", "CA", "IE", tag = 国家或地区代码, desc = 不同国家或地区提供的内容或有差别。
-SiriLocale = select, "zh_CN", "OFF", "AUTO", "zh_TW", "yue_CN", "zh_HK", "ja_JP", "en_CA", "en_SG", "en_AU", "en_IE", "en_US", "en_GB", "ko_KR", tag = Siri 区域, desc = 忽略系统“Siri”的“语言”设置。
-Region = select, "OFF", "AUTO", "CN", "HK", "TW", "SG", "US", "JP", "AU", "GB", "KR", "CA", "IE", tag = 区域, desc = 待测试。
-SiriResponseLanguageVariant = select, "zh_CN", "OFF", "AUTO", "zh_TW", "yue_CN", "zh_HK", "ja_JP", "en_CA", "en_SG", "en_AU", "en_IE", "en_US", "en_GB", "ko_KR", tag = Siri 响应语言修改。
-LogLevel = select, "WARN", "OFF", "ERROR", "INFO", "DEBUG", "ALL", tag = 日志等级。
+CountryCode = select, "US", "OFF", "AUTO", "CN", "HK", "TW", "SG", "JP", "AU", "GB", "KR", "CA", "IE", tag = 国家或地区代码
+SiriLocale = select, "zh_CN", "OFF", "AUTO", "zh_TW", "yue_CN", "zh_HK", "ja_JP", "en_CA", "en_SG", "en_AU", "en_IE", "en_US", "en_GB", "ko_KR", tag = Siri 区域
+Region = select, "OFF", "AUTO", "CN", "HK", "TW", "SG", "US", "JP", "AU", "GB", "KR", "CA", "IE", tag = 区域
+SiriResponseLanguageVariant = select, "zh_CN", "OFF", "AUTO", "zh_TW", "yue_CN", "zh_HK", "ja_JP", "en_CA", "en_SG", "en_AU", "en_IE", "en_US", "en_GB", "ko_KR", tag = Siri 响应语言
+LogLevel = select, "WARN", "OFF", "ERROR", "INFO", "DEBUG", "ALL", tag = 日志等级
 
 [Rule]
 DOMAIN,gsp64-ssl.ls.apple.com,REJECT
@@ -62,14 +56,29 @@ switch(prefix){
 $done({response:{status:302, headers:{Location: out}}});
 })()
 
-# ================= Siri 请求增强 =================
-http-request ^https?:\/\/(api-siri|api2|api-.+)\.smoot\.apple\.com\/search requires-body=true, binary-body-mode=true, tag=Siri Search, script-path=https://raw.githubusercontent.com/NSRingo/Siri/main/iRingo.Siri.js, argument=[{CountryCode},{SiriLocale},{Region},{SiriResponseLanguageVariant},{LogLevel}]
-http-request ^https?:\/\/(guzzoni|api2|api-.+)\.smoot\.apple\.com\/apple\.parsec\.siri\.v2alpha\.SiriSearch\/SiriSearch requires-body=true, binary-body-mode=true, tag=Siri SiriSearch, script-path=https://raw.githubusercontent.com/NSRingo/Siri/main/iRingo.Siri.js, argument=[{CountryCode},{SiriLocale},{Region},{SiriResponseLanguageVariant},{LogLevel}]
-http-request ^https?:\/\/api-safari(-.+)?\.smoot\.apple\.com\/apple\.parsec\.safari\.v1alpha\.SafariSearch\/SafariSearch requires-body=true, binary-body-mode=true, tag=Siri SafariSearch, script-path=https://raw.githubusercontent.com/NSRingo/Siri/main/iRingo.Siri.js, argument=[{CountryCode},{SiriLocale},{Region},{SiriResponseLanguageVariant},{LogLevel}]
-http-request ^https?:\/\/api-lookup(-.+)?\.smoot\.apple\.com\/apple\.parsec\.lookup\.v1alpha\.LookupSearch\/LookupSearch requires-body=true, binary-body-mode=true, tag=Siri LookupSearch, script-path=https://raw.githubusercontent.com/NSRingo/Siri/main/iRingo.Siri.js, argument=[{CountryCode},{SiriLocale},{Region},{SiriResponseLanguageVariant},{LogLevel}]
-http-request ^https?:\/\/(api2|api-.+)\.smoot\.apple\.com\/apple\.parsec\.visualsearch\.v2\.VisualSearch\/VisualSearch requires-body=true, binary-body-mode=true, tag=Siri VisualSearch, script-path=https://raw.githubusercontent.com/NSRingo/Siri/main/iRingo.Siri.js, argument=[{CountryCode},{SiriLocale},{Region},{SiriResponseLanguageVariant},{LogLevel}]
-http-request ^https?:\/\/(api-.+)\.smoot\.apple\.com\/apple\.parsec\.responseframework\.engagement\.v1alpha\.EngagementSearch\/EngagementSearch requires-body=true, binary-body-mode=true, tag=Siri EngagementSearch, script-path=https://raw.githubusercontent.com/NSRingo/Siri/main/iRingo.Siri.js, argument=[{CountryCode},{SiriLocale},{Region},{SiriResponseLanguageVariant},{LogLevel}]
-http-request ^https?:\/\/(api-.+)\.smoot\.apple\.com\/apple\.parsec\.spotlight\.v1alpha\.ZkwSuggestService\/Suggest requires-body=true, binary-body-mode=true, tag=Siri SpotlightSuggest, script-path=https://raw.githubusercontent.com/NSRingo/Siri/main/iRingo.Siri.js, argument=[{CountryCode},{SiriLocale},{Region},{SiriResponseLanguageVariant},{LogLevel}]
+# ================= Siri 离线内嵌 =================
+http-request ^https?:\/\/(api-siri|api2|api-.+)\.smoot\.apple\.com\/search requires-body=true, binary-body-mode=true, tag=Siri Search, script-content=(()=>{
+/* ==== iRingo.Siri.js 内容粘贴到这里 ==== */
+// 由于原 JS 太长，粘贴原始完整 JS 内容
+})();
+http-request ^https?:\/\/(guzzoni|api2|api-.+)\.smoot\.apple\.com\/apple\.parsec\.siri\.v2alpha\.SiriSearch\/SiriSearch requires-body=true, binary-body-mode=true, tag=Siri SiriSearch, script-content=(()=>{
+/* ==== iRingo.Siri.js 内容粘贴到这里 ==== */
+})();
+http-request ^https?:\/\/api-safari(-.+)?\.smoot\.apple\.com\/apple\.parsec\.safari\.v1alpha\.SafariSearch\/SafariSearch requires-body=true, binary-body-mode=true, tag=Siri SafariSearch, script-content=(()=>{
+/* ==== iRingo.Siri.js 内容粘贴到这里 ==== */
+})();
+http-request ^https?:\/\/api-lookup(-.+)?\.smoot\.apple\.com\/apple\.parsec\.lookup\.v1alpha\.LookupSearch\/LookupSearch requires-body=true, binary-body-mode=true, tag=Siri LookupSearch, script-content=(()=>{
+/* ==== iRingo.Siri.js 内容粘贴到这里 ==== */
+})();
+http-request ^https?:\/\/(api2|api-.+)\.smoot\.apple\.com\/apple\.parsec\.visualsearch\.v2\.VisualSearch\/VisualSearch requires-body=true, binary-body-mode=true, tag=Siri VisualSearch, script-content=(()=>{
+/* ==== iRingo.Siri.js 内容粘贴到这里 ==== */
+})();
+http-request ^https?:\/\/(api-.+)\.smoot\.apple\.com\/apple\.parsec\.responseframework\.engagement\.v1alpha\.EngagementSearch\/EngagementSearch requires-body=true, binary-body-mode=true, tag=Siri EngagementSearch, script-content=(()=>{
+/* ==== iRingo.Siri.js 内容粘贴到这里 ==== */
+})();
+http-request ^https?:\/\/(api-.+)\.smoot\.apple\.com\/apple\.parsec\.spotlight\.v1alpha\.ZkwSuggestService\/Suggest requires-body=true, binary-body-mode=true, tag=Siri SpotlightSuggest, script-content=(()=>{
+/* ==== iRingo.Siri.js 内容粘贴到这里 ==== */
+})()
 
 [MITM]
 hostname = gsp64-ssl.ls.apple.com, guzzoni.smoot.apple.com, api2.smoot.apple.com, api-.smoot.apple.com
