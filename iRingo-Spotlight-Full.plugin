@@ -1,0 +1,53 @@
+[Plugin]
+name = iRingo-Spotlight-Full
+desc = Loon 仿 iRingo Spotlight 搜索 + 常用中文 App/网站快捷入口
+author = z-helper
+version = 1.0
+icon = https://raw.githubusercontent.com/yourrepo/icons/spotlight.png
+
+[Rule]
+DOMAIN,gsa.apple.com,Spotlight
+DOMAIN,api-glb-sea.smoot.apple.com,Spotlight
+
+[Script]
+// =================== JS START ===================
+function enc(s){return encodeURIComponent(s);}
+let qMatch = $request.url.match(/[?&]q=([^&]+)/);
+if (!qMatch) { $done({}); }
+let q = decodeURIComponent(qMatch[1].replace(/\+/g,' ')).trim();
+
+let firstSpace = q.indexOf(" ");
+let hasPrefix = firstSpace > 0;
+let prefix = hasPrefix ? q.slice(0, firstSpace).toLowerCase() : "";
+let keyword = hasPrefix ? q.slice(firstSpace + 1).trim() : q;
+
+function defaultSearch(s){ return "https://www.google.com/search?q=" + enc(s); }
+
+let out = "";
+switch(prefix){
+  case "g":    out = "https://www.google.com/search?q=" + enc(keyword); break;
+  case "b":    out = "https://www.baidu.com/s?wd=" + enc(keyword); break;
+  case "ddg":  out = "https://duckduckgo.com/?q=" + enc(keyword); break;
+  case "zh":   out = "https://www.zhihu.com/search?q=" + enc(keyword); break;
+  case "wiki": out = "https://zh.wikipedia.org/wiki/Special:Search?search=" + enc(keyword); break;
+  case "yt":   out = "https://www.youtube.com/results?search_query=" + enc(keyword); break;
+  case "wb":   out = "https://s.weibo.com/weibo?q=" + enc(keyword); break;
+  case "map":  out = "https://www.google.com/maps/search/" + enc(keyword); break;
+  case "amap": out = "iosamap://poi?sourceApplication=loon&name=" + enc(keyword) + "&dev=0"; break;
+  case "app":  
+    if (/^[a-zA-Z]+:\/\//.test(keyword)) out = keyword;
+    else out = defaultSearch(keyword);
+    break;
+  case "b站":  out = "bilibili://search?keyword=" + enc(keyword); break;
+  case "douban": out = "https://www.douban.com/search?q=" + enc(keyword); break;
+  case "jd":   out = "openapp.jdmobile://virtual?params=" + enc(keyword); break;
+  case "tb":   out = "taobao://s.taobao.com/search?q=" + enc(keyword); break;
+  case "xhs":  out = "xiaoheishuo://search?query=" + enc(keyword); break;
+  case "dy":   out = "snssdk1128://search?keyword=" + enc(keyword); break;
+  case "wx":   out = "weixin://"; break;
+  case "dd":   out = "dingtalk://"; break;
+  default:     out = defaultSearch(q); break;
+}
+
+$done({response:{status:302, headers:{Location: out}}});
+// =================== JS END ===================
