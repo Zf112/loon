@@ -3,12 +3,28 @@ name = iRingo-Spotlight-Full
 desc = Loon 仿 iRingo Spotlight 搜索 + 常用中文 App/网站快捷入口
 author = z-helper
 version = 1.0
-icon = https://raw.githubusercontent.com/yourrepo/icons/spotlight.png
+icon = https://raw.githubusercontent.com/yourrepo/icons/spotlight.png#!name=Spotlight+Siri iRingo Full
+#!desc=整合 Spotlight 搜索增强与 Siri 增强功能（适配 iOS 18.6，Loon）
+#!author=z
+#!version=1.0
+#!homepage=https://github.com/NSRingo/Siri
+#!icon=https://raw.githubusercontent.com/NSRingo/Siri/main/icon.png
 
 [Rule]
-DOMAIN,gsa.apple.com,Spotlight
-DOMAIN,api-glb-sea.smoot.apple.com,Spotlight
+DOMAIN,gsp64-ssl.ls.apple.com,REJECT
+DOMAIN-SUFFIX,siri.apple.com,DIRECT
+DOMAIN-SUFFIX,dictation.apple.com,DIRECT
+DOMAIN-SUFFIX,ls.apple.com,DIRECT
 
+[Script]
+# Spotlight Search 增强
+http-response ^https?:\/\/gsp64-ssl\.ls\.apple\.com\/search  script-path=https://raw.githubusercontent.com/Zf112/loon/main/iRingo-Spotlight-Full.js, requires-body=true, tag=Spotlight Search Enhance
+
+# Siri 增强
+http-response ^https?:\/\/(api|guzzoni)\.siri\.apple\.com\/  script-path=https://github.com/NSRingo/Siri/releases/download/v4.2.7/iRingo.Siri.js, requires-body=true, tag=Siri Enhance
+
+[MITM]
+hostname = gsp64-ssl.ls.apple.com, *.siri.apple.com, *.dictation.apple.com, ls.apple.com
 [Script]
 // =================== JS START ===================
 function enc(s){return encodeURIComponent(s);}
