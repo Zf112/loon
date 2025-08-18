@@ -1,0 +1,31 @@
+[Plugin]
+# ================== 防止微信转圈插件 ==================
+# 功能：阻断广告、埋点、无用探测请求，加快响应
+# 作者：Zf1123
+# 版本：1.2（单文件内联版）
+
+[Rule]
+# 阻断无关广告/埋点/探测域名，避免长时间 pending
+DOMAIN-SUFFIX,szshort.weixin.qq.com,REJECT
+DOMAIN-SUFFIX,short.weixin.qq.com,REJECT
+DOMAIN-SUFFIX,weixin110.qq.com,REJECT      # 风控埋点
+DOMAIN-SUFFIX,wximg.qq.com,REJECT          # 部分预取广告图片
+DOMAIN-SUFFIX,wx.qlogo.cn,REJECT           # 多余头像请求（非必要）
+DOMAIN,mp.weixin.qq.com,REJECT             # 广告和埋点接口（重写部分放行）
+
+[Rewrite]
+# 拦截广告接口并返回空对象
+^https?:\/\/mp\.weixin\.qq\.com\/mp\/(ad_|advert|advertisement).* url reject-200
+^https?:\/\/mp\.weixin\.qq\.com\/mp\/getappmsgad url reject-200
+^https?:\/\/mp\.weixin\.qq\.com\/mp\/report.* url reject-200
+^https?:\/\/mp\.weixin\.qq\.com\/mp\/appmsgreport.* url reject-200
+
+[Script]
+# 对剩余可能 pending 的接口快速返回，避免转圈
+http-request ^https?:\/\/mp\.weixin\.qq\.com\/.* script-type=inline-script, timeout=5, tag=WeChat-FastFix
+const response = {
+  status: 200,
+  headers: {"Content-Type": "application/json"},
+  body: JSON.stringify({})
+};
+$done(response);
