@@ -1,0 +1,184 @@
+#!name=微信直连 + Telegram/YouTube日本智能策略保活
+#!desc=微信直连（包含核心域名+CDN+文件传输），Telegram/YouTube走日本智能策略，保活脚本
+#!version=1.1
+#!author=Zf1123
+
+[General]
+
+# ===== Skip First Packet 核心域名 =====
+# 微信
+skip-first-packet = weixin.qq.com:443
+skip-first-packet = mp.weixin.qq.com:443
+skip-first-packet = wx.qq.com:443
+skip-first-packet = wxapp.qq.com:443
+skip-first-packet = voice.weixin.qq.com:443
+skip-first-packet = long.weixin.qq.com:443
+skip-first-packet = short.weixin.qq.com:443
+skip-first-packet = pay.weixin.qq.com:443
+skip-first-packet = file.wx.qq.com:443
+# Telegram
+skip-first-packet = telegram.org:443
+skip-first-packet = t.me:443
+skip-first-packet = telegram.me:443
+skip-first-packet = core.telegram.org:443
+skip-first-packet = cdn.telegram.org:443
+skip-first-packet = telegra.ph:443
+skip-first-packet = file.telegram.org:443
+# YouTube
+skip-first-packet = youtube.com:443
+skip-first-packet = www.youtube.com:443
+skip-first-packet = m.youtube.com:443
+skip-first-packet = youtube-nocookie.com:443
+skip-first-packet = ytimg.com:443
+skip-first-packet = googlevideo.com:443
+
+[Rule]
+
+# ===== 核心微信直连 =====
+DOMAIN,mp.weixin.qq.com,DIRECT
+DOMAIN-SUFFIX,weixin.qq.com,DIRECT
+DOMAIN-SUFFIX,wx.qq.com,DIRECT
+DOMAIN-SUFFIX,wxapp.qq.com,DIRECT
+DOMAIN-SUFFIX,voice.weixin.qq.com,DIRECT
+DOMAIN-SUFFIX,long.weixin.qq.com,DIRECT
+DOMAIN-SUFFIX,short.weixin.qq.com,DIRECT
+DOMAIN-SUFFIX,pay.weixin.qq.com,DIRECT
+
+# ===== 重要CDN和文件传输 =====
+DOMAIN-SUFFIX,qpic.cn,DIRECT
+DOMAIN-SUFFIX,qlogo.cn,DIRECT
+DOMAIN-SUFFIX,gtimg.cn,DIRECT
+DOMAIN-SUFFIX,ugdtimg.com,DIRECT
+DOMAIN-SUFFIX,file.wx.qq.com,DIRECT
+
+# ===== Telegram/YouTube走日本智能策略 =====
+DOMAIN-SUFFIX,telegram.org,日本智能策略
+DOMAIN-SUFFIX,t.me,日本智能策略
+DOMAIN-SUFFIX,telegram.me,日本智能策略
+DOMAIN-SUFFIX,core.telegram.org,日本智能策略
+DOMAIN-SUFFIX,cdn.telegram.org,日本智能策略
+DOMAIN-SUFFIX,telegra.ph,日本智能策略
+DOMAIN-SUFFIX,file.telegram.org,日本智能策略
+
+DOMAIN-SUFFIX,youtube.com,日本智能策略
+DOMAIN-SUFFIX,www.youtube.com,日本智能策略
+DOMAIN-SUFFIX,m.youtube.com,日本智能策略
+DOMAIN-SUFFIX,youtube-nocookie.com,日本智能策略
+DOMAIN-SUFFIX,ytimg.com,日本智能策略
+DOMAIN-SUFFIX,googlevideo.com,日本智能策略
+
+[Script]
+
+# 定时保活，每2小时执行一次
+cron "0 */2 * * *" script-name=trigger-keepalive.js, timeout=10, tag=微信+Telegram+YouTube定时保活
+
+# 即时保活，微信/Telegram/YouTube请求触发
+http-request
+regex=^https?:\/\/(mp\.weixin\.qq\.com|weixin\.qq\.com|wx\.qq\.com|wxapp\.qq\.com|voice\.weixin\.qq\.com|long\.weixin\.qq\.com|short\.weixin\.qq\.com|pay\.weixin\.qq\.com|file\.wx\.qq\.com|qpic\.cn|qlogo\.cn|gtimg\.cn|ugdtimg\.com|telegram\.org|t\.me|telegram\.me|core\.telegram\.org|cdn\.telegram\.org|telegra\.ph|file\.telegram\.org|youtube\.com|www\.youtube\.com|m\.youtube\.com|youtube-nocookie\.com|ytimg\.com|googlevideo\.com)\/
+script-name=trigger-keepalive.js
+timeout=6
+tag=即时保活
+
+[Script-Content]
+
+#!name=trigger-keepalive.js
+const KEEPALIVE_URLS = [
+  // 微信
+  "https://mp.weixin.qq.com/",
+  "https://weixin.qq.com/",
+  "https://wx.qq.com/",
+  "https://wxapp.qq.com/",
+  "https://voice.weixin.qq.com/",
+  "https://long.weixin.qq.com/",
+  "https://short.weixin.qq.com/",
+  "https://pay.weixin.qq.com/",
+  "https://file.wx.qq.com/",
+  "https://qpic.cn/",
+  "https://qlogo.cn/",
+  "https://gtimg.cn/",
+  "https://ugdtimg.com/",
+  // Telegram
+  "https://telegram.org/",
+  "https://t.me/",
+  "https://telegram.me/",
+  "https://core.telegram.org/",
+  "https://cdn.telegram.org/",
+  "https://telegra.ph/",
+  "https://file.telegram.org/",
+  // YouTube
+  "https://www.youtube.com/",
+  "https://youtube.com/",
+  "https://m.youtube.com/",
+  "https://youtube-nocookie.com/",
+  "https://ytimg.com/",
+  "https://googlevideo.com/"
+];
+const TIMEOUT = 6000;
+const LOG = true;
+
+function httpGet(url) {
+  const startTime = Date.now();
+  return new Promise(resolve => {
+    function logResult(ok, status, error) {
+      const elapsed = Date.now() - startTime;
+      if (LOG) {
+        if (ok) {
+          console.log(`[保活] 请求成功: ${url} 状态: ${status} 耗时: ${elapsed}ms`);
+        } else {
+          console.log(`[保活] 请求失败: ${url} 状态: ${status || ""} 错误: ${error} 耗时: ${elapsed}ms`);
+        }
+      }
+    }
+
+    if (typeof $task !== "undefined" && $task.fetch) {
+      $task.fetch({ url, method: "GET", timeout: TIMEOUT }).then(resp => {
+        logResult(resp.statusCode >= 200 && resp.statusCode < 400, resp.statusCode);
+        resolve({ ok: resp.statusCode >= 200 && resp.statusCode < 400, status: resp.statusCode });
+      }).catch(e => {
+        logResult(false, null, e.toString());
+        resolve({ ok: false, error: e.toString() });
+      });
+    } else if (typeof $httpClient !== "undefined") {
+      $httpClient.get({ url, timeout: TIMEOUT }, (err, resp) => {
+        if (err) {
+          logResult(false, null, err.toString());
+          resolve({ ok: false, error: err.toString() });
+        } else {
+          logResult(resp.status >= 200 && resp.status < 400, resp.status);
+          resolve({ ok: resp.status >= 200 && resp.status < 400, status: resp.status });
+        }
+      });
+    } else {
+      fetch(url, { method: "GET", cache: "no-store", mode: "cors" }).then(resp => {
+        logResult(resp.status >= 200 && resp.status < 400, resp.status);
+        resolve({ ok: resp.status >= 200 && resp.status < 400, status: resp.status });
+      }).catch(e => {
+        logResult(false, null, e.toString());
+        resolve({ ok: false, error: e.toString() });
+      });
+    }
+  });
+}
+
+async function keepAlive(triggerType = "定时") {
+  if (LOG) console.log(`[保活] 开始执行 (${triggerType})`);
+  let successCount = 0;
+  for (const url of KEEPALIVE_URLS) {
+    const res = await httpGet(url);
+    if (res.ok) successCount++;
+  }
+  if (LOG) console.log(`[保活] 执行完成，成功请求数: ${successCount}/${KEEPALIVE_URLS.length}`);
+}
+
+const urlRegex = /^https?:\/\/(mp\.weixin\.qq\.com|weixin\.qq\.com|wx\.qq\.com|wxapp\.qq\.com|voice\.weixin\.qq\.com|long\.weixin\.qq\.com|short\.weixin\.qq\.com|pay\.weixin\.qq\.com|file\.wx\.qq\.com|qpic\.cn|qlogo\.cn|gtimg\.cn|ugdtimg\.com|telegram\.org|t\.me|telegram\.me|core\.telegram\.org|cdn\.telegram\.org|telegra\.ph|file\.telegram\.org|youtube\.com|www\.youtube\.com|m\.youtube\.com|youtube-nocookie\.com|ytimg\.com|googlevideo\.com)\/.+/i;
+
+(async () => {
+  if (typeof $request !== "undefined" && $request && $request.url && urlRegex.test($request.url)) {
+    if (LOG) console.log(`[即时保活] 触发请求 URL: ${$request.url}`);
+    await keepAlive("即时");
+    $done({});
+  } else {
+    await keepAlive("定时");
+    if (typeof $done === "function") $done({});
+  }
+})();
