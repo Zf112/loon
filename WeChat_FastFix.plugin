@@ -1,97 +1,116 @@
-#!name=微信轻量保活防转圈
-#!desc=轻量版微信保活 + 快速返回 pending 请求
-#!version=1.0
-#!author=Zf112
+#!name=微信防转圈保活增强版（带日志）
+#!desc=防转圈 + 保活 + 快速打断 + 优化文章/短视频加载 + 日志
+#!version=4.2
+#!author=Zf1123
 
 [Rule]
-# ====== 核心微信直连（保活 + 防转圈）======
+# 核心微信直连，保证正常聊天和文章加载
 DOMAIN,mp.weixin.qq.com,DIRECT
 DOMAIN-SUFFIX,weixin.qq.com,DIRECT
 DOMAIN-SUFFIX,wx.qq.com,DIRECT
 DOMAIN-SUFFIX,res.wx.qq.com,DIRECT
+DOMAIN-SUFFIX,wximg.qq.com,DIRECT
+DOMAIN-SUFFIX,wx.qlogo.cn,DIRECT
+DOMAIN-SUFFIX,file.wx.qq.com,DIRECT
+DOMAIN-SUFFIX,wework.qpic.cn,DIRECT
+DOMAIN-SUFFIX,mmbizurl.cn,DIRECT
 
-# 阻断轻量广告/埋点，避免长时间 pending
+# 阻断可能导致 pending 的无关接口
 DOMAIN-SUFFIX,szshort.weixin.qq.com,REJECT
 DOMAIN-SUFFIX,short.weixin.qq.com,REJECT
 DOMAIN-SUFFIX,weixin110.qq.com,REJECT
-DOMAIN-SUFFIX,wximg.qq.com,REJECT
-DOMAIN-SUFFIX,wx.qlogo.cn,REJECT
+
+[Rewrite]
+# 广告/埋点接口快速返回空，防止转圈
+^https?:\/\/mp\.weixin\.qq\.com\/mp\/(ad_|advert|advertisement).* url reject-200
+^https?:\/\/mp\.weixin\.qq\.com\/mp\/getappmsgad url reject-200
+^https?:\/\/mp\.weixin\.qq\.com\/mp\/report.* url reject-200
+^https?:\/\/mp\.weixin\.qq\.com\/mp\/appmsgreport.* url reject-200
 
 [Script]
-# 定时保活：每 5 分钟触发一次
-cron "0 */5 * * *" script-type=inline-script, timeout=10, tag=微信定时保活
-# 微信请求触发即时保活
+# 快速打断 pending 请求
+http-request ^https?:\/\/mp\.weixin\.qq\.com\/.* script-type=inline-script, timeout=5, tag=WeChat-FastBreak-Enhanced
+
+# 保活机制
+# 定时：每5分钟触发核心微信 URL
+cron "*/5 * * * *" script-name=wechat_keepalive.js, timeout=8, tag=微信定时保活
+# 即时：微信请求触发时
 http-request
 regex=^https?:\/\/(weixin\.qq\.com|mp\.weixin\.qq\.com)\/
-script-type=inline-script, timeout=6, tag=微信即时保活
-# 防止长时间 pending 请求快速返回
-http-request ^https?:\/\/mp\.weixin\.qq\.com\/.* script-type=inline-script, timeout=5, tag=WeChat-FastFix
+script-name=wechat_keepalive.js
+timeout=6
+tag=微信即时保活
 
 [Script-Content]
-#!name=wechat_keepalive_fastfix_lite.js
+#!name=wechat_fastbreak_keepalive_enhanced.js
 const KEEPALIVE_URLS = [
-  "https://mp.weixin.qq.com/",
-  "https://weixin.qq.com/",
-  "https://res.wx.qq.com/zh_CN/htmledition/js/wxLogin.js"
+    "https://mp.weixin.qq.com/",
+    "https://weixin.qq.com/",
+    "https://res.wx.qq.com/zh_CN/htmledition/js/wxLogin.js",
+    "https://res.wx.qq.com/zh_CN/htmledition/js/appmsg/index.js"
 ];
 const TIMEOUT = 6000;
-const LOG = true;
+const LOG = true; // 开启日志输出
 
-function httpGet(url) {
-  const startTime = Date.now();
-  return new Promise(resolve => {
-    function logResult(ok, status, error) {
-      if (!LOG) return;
-      const elapsed = Date.now() - startTime;
-      if (ok) {
-        console.log(`[微信保活] 请求成功: ${url} 状态: ${status} 耗时: ${elapsed}ms`);
-      } else {
-        console.log(`[微信保活] 请求失败: ${url} 状态: ${status || ""} 错误: ${error} 耗时: ${elapsed}ms`);
-      }
-    }
-
-    if (typeof $task !== "undefined" && $task.fetch) {
-      $task.fetch({ url, method: "GET", timeout: TIMEOUT }).then(resp => {
-        logResult(resp.statusCode >= 200 && resp.statusCode < 400, resp.statusCode);
-        resolve({ ok: resp.statusCode >= 200 && resp.statusCode < 400 });
-      }).catch(e => { logResult(false, null, e.toString()); resolve({ ok: false }); });
-    } else if (typeof $httpClient !== "undefined") {
-      $httpClient.get({ url, timeout: TIMEOUT }, (err, resp) => {
-        if (err) { logResult(false, null, err.toString()); resolve({ ok: false }); }
-        else { logResult(resp.status >= 200 && resp.status < 400, resp.status); resolve({ ok: resp.status >= 200 && resp.status < 400 }); }
-      });
-    } else {
-      fetch(url, { method: "GET", cache: "no-store", mode: "cors" }).then(resp => {
-        logResult(resp.status >= 200 && resp.status < 400, resp.status);
-        resolve({ ok: resp.status >= 200 && resp.status < 400 });
-      }).catch(e => { logResult(false, null, e.toString()); resolve({ ok: false }); });
-    }
-  });
+// ----------------------
+// 快速打断 pending 请求
+// ----------------------
+if ($request && $request.url && $request.url.includes("mp.weixin.qq.com")) {
+    $done({
+        status: 200,
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({})
+    });
 }
 
-async function keepAlive(triggerType = "定时") {
-  if (LOG) console.log(`[微信保活] 开始执行 (${triggerType})`);
-  let successCount = 0;
-  for (const url of KEEPALIVE_URLS) {
-    const res = await httpGet(url);
-    if (res.ok) successCount++;
-  }
-  if (LOG) console.log(`[微信保活] 执行完成，成功请求数: ${successCount}/${KEEPALIVE_URLS.length}`);
+// ----------------------
+// HTTP GET 带日志
+// ----------------------
+async function httpGet(url) {
+    const startTime = Date.now();
+    return new Promise(resolve => {
+        function logResult(ok, status, error) {
+            const elapsed = Date.now() - startTime;
+            if (LOG) {
+                if (ok) {
+                    console.log(`[微信保活] 请求成功: ${url} 状态: ${status} 耗时: ${elapsed}ms`);
+                } else {
+                    console.log(`[微信保活] 请求失败: ${url} 状态: ${status || ""} 错误: ${error} 耗时: ${elapsed}ms`);
+                }
+            }
+        }
+
+        if (typeof $task !== "undefined" && $task.fetch) {
+            $task.fetch({ url, method: "GET", timeout: TIMEOUT })
+            .then(resp => { logResult(resp.statusCode >= 200 && resp.statusCode < 400, resp.statusCode); resolve(resp.statusCode); })
+            .catch(e => { logResult(false, null, e.toString()); resolve(0); });
+        } else if (typeof $httpClient !== "undefined") {
+            $httpClient.get({ url, timeout: TIMEOUT }, (err, resp) => {
+                if (err) { logResult(false, null, err.toString()); resolve(0); }
+                else { logResult(resp.status >= 200 && resp.status < 400, resp.status); resolve(resp.status); }
+            });
+        } else {
+            fetch(url, { method:"GET", cache:"no-store", mode:"cors" })
+            .then(resp => { logResult(resp.status >= 200 && resp.status < 400, resp.status); resolve(resp.status); })
+            .catch(e => { logResult(false, null, e.toString()); resolve(0); });
+        }
+    });
 }
 
+// ----------------------
+// 保活执行
+// ----------------------
 const wechatUrlRegex = /^https?:\/\/(weixin\.qq\.com|mp\.weixin\.qq\.com)\/.+/i;
 
 (async () => {
-  if (typeof $request !== "undefined" && $request && $request.url && wechatUrlRegex.test($request.url)) {
-    if (LOG) console.log(`[微信即时保活] 触发请求 URL: ${$request.url}`);
-    await keepAlive("即时");
-    $done({});
-  } else {
-    await keepAlive("定时");
-    if (typeof $done === "function") $done({});
-  }
+    if (typeof $request !== "undefined" && $request && $request.url && wechatUrlRegex.test($request.url)) {
+        if (LOG) console.log(`[微信即时保活] 触发请求 URL: ${$request.url}`);
+        for (const url of KEEPALIVE_URLS) await httpGet(url);
+        $done({});
+    } else {
+        if (LOG) console.log(`[微信定时保活] 开始执行`);
+        for (const url of KEEPALIVE_URLS) await httpGet(url);
+        if (LOG) console.log(`[微信定时保活] 执行完成`);
+        if (typeof $done === "function") $done({});
+    }
 })();
-
-// 快速返回 pending 请求（防转圈）
-const response = { status: 200, headers: {"Content-Type":"application/json"}, body: JSON.stringify({}) };
-$done(response);
