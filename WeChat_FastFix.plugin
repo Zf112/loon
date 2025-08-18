@@ -1,17 +1,60 @@
-[Plugin]
-# ================== 防止微信转圈插件 ==================
-# 功能：阻断广告、埋点、无用探测请求，加快响应
-# 作者：Zf1123
-# 版本：1.2（单文件内联版）
+#!name=微信防转圈保活
+#!desc=拦截广告/埋点 + 定时保活 + 快速返回 pending 请求
+#!version=1.3
+#!author=Zf112
 
 [Rule]
-# 阻断无关广告/埋点/探测域名，避免长时间 pending
+# ====== 核心微信直连（防转圈 + 降延迟）======
+DOMAIN,mp.weixin.qq.com,DIRECT
+DOMAIN-SUFFIX,weixin.qq.com,DIRECT
+DOMAIN-SUFFIX,wx.qq.com,DIRECT
+DOMAIN-SUFFIX,wxapp.qq.com,DIRECT
+DOMAIN-SUFFIX,open.weixin.qq.com,DIRECT
+DOMAIN-SUFFIX,res.wx.qq.com,DIRECT
+
+# 消息推送 / 实时通信（低延迟关键）
+DOMAIN-SUFFIX,long.weixin.qq.com,DIRECT
+DOMAIN-SUFFIX,short.weixin.qq.com,DIRECT
+DOMAIN-SUFFIX,voice.weixin.qq.com,DIRECT
+DOMAIN-SUFFIX,wxavs.qq.com,DIRECT
+DOMAIN-SUFFIX,webrtc.weixin.qq.com,DIRECT
+DOMAIN-SUFFIX,liveplay.myqcloud.com,DIRECT
+DOMAIN-SUFFIX,liveplay.video.qq.com,DIRECT
+DOMAIN-SUFFIX,qcloud.com,DIRECT
+DOMAIN-SUFFIX,myqcloud.com,DIRECT
+
+# 文件传输
+DOMAIN-SUFFIX,file.wx.qq.com,DIRECT
+DOMAIN-SUFFIX,wework.qpic.cn,DIRECT
+
+# 短链
+DOMAIN-SUFFIX,mmbizurl.cn,DIRECT
+
+# 腾讯通用 CDN
+DOMAIN-SUFFIX,ugdtimg.com,DIRECT
+DOMAIN-SUFFIX,gtimg.cn,DIRECT
+
+# 微信官方域名
+DOMAIN-SUFFIX,weixin.qq.com,DIRECT
+DOMAIN-SUFFIX,mp.weixin.qq.com,DIRECT
+DOMAIN-SUFFIX,res.wx.qq.com,DIRECT
+DOMAIN-SUFFIX,wechat.com,DIRECT
+DOMAIN-SUFFIX,weixin110.qq.com,DIRECT
+DOMAIN-SUFFIX,qq.com,DIRECT
+
+# 微信相关 IP 段（示例）
+IP-CIDR,14.17.0.0/16,DIRECT
+IP-CIDR,183.60.0.0/16,DIRECT
+IP-CIDR,111.13.0.0/16,DIRECT
+IP-CIDR,123.125.0.0/16,DIRECT
+
+# 防止微信转圈：阻断无关广告/埋点/探测
 DOMAIN-SUFFIX,szshort.weixin.qq.com,REJECT
 DOMAIN-SUFFIX,short.weixin.qq.com,REJECT
-DOMAIN-SUFFIX,weixin110.qq.com,REJECT      # 风控埋点
-DOMAIN-SUFFIX,wximg.qq.com,REJECT          # 部分预取广告图片
-DOMAIN-SUFFIX,wx.qlogo.cn,REJECT           # 多余头像请求（非必要）
-DOMAIN,mp.weixin.qq.com,REJECT             # 广告和埋点接口（重写部分放行）
+DOMAIN-SUFFIX,weixin110.qq.com,REJECT
+DOMAIN-SUFFIX,wximg.qq.com,REJECT
+DOMAIN-SUFFIX,wx.qlogo.cn,REJECT
+DOMAIN,mp.weixin.qq.com,REJECT
 
 [Rewrite]
 # 拦截广告接口并返回空对象
@@ -21,8 +64,93 @@ DOMAIN,mp.weixin.qq.com,REJECT             # 广告和埋点接口（重写部�
 ^https?:\/\/mp\.weixin\.qq\.com\/mp\/appmsgreport.* url reject-200
 
 [Script]
-# 对剩余可能 pending 的接口快速返回，避免转圈
+# 1️⃣ 定时保活：每 5 分钟触发一次
+cron "0 */5 * * *" script-type=inline-script, timeout=10, tag=微信定时保活
+# 2️⃣ 微信请求触发即时保活
+http-request
+regex=^https?:\/\/(weixin\.qq\.com|mp\.weixin\.qq\.com)\/
+script-type=inline-script, timeout=6, tag=微信即时保活
+# 3️⃣ 防止长时间 pending 请求
 http-request ^https?:\/\/mp\.weixin\.qq\.com\/.* script-type=inline-script, timeout=5, tag=WeChat-FastFix
+
+[Script-Content]
+#!name=wechat_keepalive_fastfix.js
+const KEEPALIVE_URLS = [
+  "https://mp.weixin.qq.com/",
+  "https://weixin.qq.com/",
+  "https://res.wx.qq.com/zh_CN/htmledition/js/wxLogin.js"
+];
+const TIMEOUT = 6000;
+const LOG = true;  // true 开启日志，false 关闭日志
+
+function httpGet(url) {
+  const startTime = Date.now();
+  return new Promise(resolve => {
+    function logResult(ok, status, error) {
+      const elapsed = Date.now() - startTime;
+      if (LOG) {
+        if (ok) {
+          console.log(`[微信保活] 请求成功: ${url} 状态: ${status} 耗时: ${elapsed}ms`);
+        } else {
+          console.log(`[微信保活] 请求失败: ${url} 状态: ${status || ""} 错误: ${error} 耗时: ${elapsed}ms`);
+        }
+      }
+    }
+
+    if (typeof $task !== "undefined" && $task.fetch) {
+      $task.fetch({ url, method: "GET", timeout: TIMEOUT }).then(resp => {
+        logResult(resp.statusCode >= 200 && resp.statusCode < 400, resp.statusCode);
+        resolve({ ok: resp.statusCode >= 200 && resp.statusCode < 400, status: resp.statusCode });
+      }).catch(e => {
+        logResult(false, null, e.toString());
+        resolve({ ok: false, error: e.toString() });
+      });
+    } else if (typeof $httpClient !== "undefined") {
+      $httpClient.get({ url, timeout: TIMEOUT }, (err, resp) => {
+        if (err) {
+          logResult(false, null, err.toString());
+          resolve({ ok: false, error: err.toString() });
+        } else {
+          logResult(resp.status >= 200 && resp.status < 400, resp.status);
+          resolve({ ok: resp.status >= 200 && resp.status < 400, status: resp.status });
+        }
+      });
+    } else {
+      fetch(url, { method: "GET", cache: "no-store", mode: "cors" }).then(resp => {
+        logResult(resp.status >= 200 && resp.status < 400, resp.status);
+        resolve({ ok: resp.status >= 200 && resp.status < 400, status: resp.status });
+      }).catch(e => {
+        logResult(false, null, e.toString());
+        resolve({ ok: false, error: e.toString() });
+      });
+    }
+  });
+}
+
+async function keepAlive(triggerType = "定时") {
+  if (LOG) console.log(`[微信保活] 开始执行 (${triggerType})`);
+  let successCount = 0;
+  for (const url of KEEPALIVE_URLS) {
+    const res = await httpGet(url);
+    if (res.ok) successCount++;
+  }
+  if (LOG) console.log(`[微信保活] 执行完成，成功请求数: ${successCount}/${KEEPALIVE_URLS.length}`);
+}
+
+const wechatUrlRegex = /^https?:\/\/(weixin\.qq\.com|mp\.weixin\.qq\.com)\/.+/i;
+
+(async () => {
+  if (typeof $request !== "undefined" && $request && $request.url && wechatUrlRegex.test($request.url)) {
+    if (LOG) console.log(`[微信即时保活] 触发请求 URL: ${$request.url}`);
+    await keepAlive("即时");
+    $done({});
+  } else {
+    await keepAlive("定时");
+    if (typeof $done === "function") $done({});
+  }
+})();
+
+// 防止长时间 pending 请求快速返回
 const response = {
   status: 200,
   headers: {"Content-Type": "application/json"},
