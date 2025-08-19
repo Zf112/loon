@@ -1,11 +1,10 @@
-#!name=微信防转圈优化版
-#!desc=微信防转圈 + 核心 + 重要CDN + 保活脚本
-#!version=1.0
-#!author=Zf1123
+#!name=WeChat增强·防转圈保活整合版（无广告）
+#!desc=DNS分流 + WeChat分流 + 解锁外链 + 防转圈(SFP) + 保活(定时/即时)
+#!version=2025.08.19
+#!author=Zf1123（整合，无广告）
 
 [General]
-
-# ===== Skip First Packet 核心+重要CDN =====
+# ===== Skip First Packet：核心 & 重要CDN，减少握手等待，缓解“转圈” =====
 skip-first-packet = weixin.qq.com:443
 skip-first-packet = mp.weixin.qq.com:443
 skip-first-packet = pay.weixin.qq.com:443
@@ -15,39 +14,59 @@ skip-first-packet = gtimg.cn:443
 skip-first-packet = ugdtimg.com:443
 skip-first-packet = file.wx.qq.com:443
 
-[Rule]
+[host]
+# > 腾讯 DoH 分流（保持原有 DoH 分流）
+*.tencent.com = server:https://doh.pub/dns-query
+*.qq.com = server:https://doh.pub/dns-query
+*.qlogo.cn = server:https://doh.pub/dns-query
+*.qpic.cn = server:https://doh.pub/dns-query
+*.weixin.qq.com = server:https://doh.pub/dns-query
+*.wx.qq.com = server:https://doh.pub/dns-query
+*.weixin.com = server:https://doh.pub/dns-query
+*.weixinbridge.com = server:https://doh.pub/dns-query
+*.wechat.com = server:https://doh.pub/dns-query
+*.servicewechat.com = server:https://doh.pub/dns-query
+*.weiyun.com = server:https://doh.pub/dns-query
+*.gtimg.cn = server:https://doh.pub/dns-query
+*.idqqimg.com = server:https://doh.pub/dns-query
+*.cdn-go.cn = server:https://doh.pub/dns-query
+*.smtcdns.com = server:https://doh.pub/dns-query
+*.smtcdns.net = server:https://doh.pub/dns-query
+url.cn = server:https://doh.pub/dns-query
 
-# ===== 核心微信直连 =====
-DOMAIN,mp.weixin.qq.com,DIRECT
+[Rule]
+# ===== 保留核心 WeChat 分流 & 防转圈 =====
+DOMAIN,WeChat*,PROXY
 DOMAIN-SUFFIX,weixin.qq.com,DIRECT
 DOMAIN-SUFFIX,wx.qq.com,DIRECT
-DOMAIN-SUFFIX,wxapp.qq.com,DIRECT
-DOMAIN-SUFFIX,voice.weixin.qq.com,DIRECT
-DOMAIN-SUFFIX,long.weixin.qq.com,DIRECT
-DOMAIN-SUFFIX,short.weixin.qq.com,DIRECT
-DOMAIN-SUFFIX,pay.weixin.qq.com,DIRECT
-
-# ===== 重要CDN和文件传输 =====
+DOMAIN-SUFFIX,mp.weixin.qq.com,DIRECT
 DOMAIN-SUFFIX,qpic.cn,DIRECT
 DOMAIN-SUFFIX,qlogo.cn,DIRECT
 DOMAIN-SUFFIX,gtimg.cn,DIRECT
 DOMAIN-SUFFIX,ugdtimg.com,DIRECT
 DOMAIN-SUFFIX,file.wx.qq.com,DIRECT
+USER-AGENT,MicroMessenger*,DIRECT
+USER-AGENT,WeChat*,PROXY
+IP-ASN,132203,PROXY
+no-resolve
+
+[Rewrite]
+# ===== 保留重写规则中非广告功能 =====
+# 无广告规则，保持可扩展
+
+[Body Rewrite]
+# ===== 保留 Body Rewrite 核心 =====
+http-response-jq ^https:\/\/mcsp\.cloudpnr\.com\/api\/miniapp\/popular\/T_MINIAPP$ 'delpaths([["data"]])'
 
 [Script]
+# ===== 外部链接解锁 =====
+http-response ^https\:\/\/(weixin110\.qq|security.wechat)\.com\/cgi-bin\/mmspamsupport-bin\/newredirectconfirmcgi\? script-path = https://kelee.one/Resource/Script/Weixin/Weixin_external_links_unlock.js, requires-body = true, tag = 微信外部链接解锁
 
-# 定时保活，每2小时执行一次
+# ===== 保活（定时 + 即时触发）=====
 cron "0 */2 * * *" script-name=trigger-keepalive.js, timeout=10, tag=微信定时保活
-
-# 即时保活，微信请求触发
-http-request
-regex=^https?:\/\/(weixin\.qq\.com|mp\.weixin\.qq\.com)\/
-script-name=trigger-keepalive.js
-timeout=6
-tag=微信即时保活
+http-request ^https?:\/\/(weixin\.qq\.com|mp\.weixin\.qq\.com|file\.wx\.qq\.com)\/ script-name=trigger-keepalive.js, timeout=6, tag=微信即时保活
 
 [Script-Content]
-
 #!name=trigger-keepalive.js
 const KEEPALIVE_URLS = [
   "https://mp.weixin.qq.com/",
@@ -122,3 +141,7 @@ const wechatUrlRegex = /^https?:\/\/(weixin\.qq\.com|mp\.weixin\.qq\.com|file\.w
     if (typeof $done === "function") $done({});
   }
 })();
+
+[MITM]
+# ===== MITM 核心域名 =====
+hostname = weixin110.qq.com, security.wechat.com, mp.weixin.qq.com
