@@ -1,10 +1,10 @@
-#!name=WeChat + Telegram/YouTube增强保活整合版（无广告）
-#!desc=DNS分流 + WeChat分流 + 防转圈(SFP) + 保活(定时/即时) + Telegram/YouTube日本智能策略
+#!name=WeChat + Telegram增强保活整合版（无广告）
+#!desc=DNS分流 + WeChat分流 + 解锁外链 + 防转圈(SFP) + 保活(定时/即时) + Telegram日本智能策略
 #!version=2025.08.19
-#!author=Zf1123（整合，无广告，优化Skip First Packet）
+#!author=Zf1123（整合，无广告，优化Skip First Packet，无YouTube）
 
 [General]
-# ===== Skip First Packet 核心域名（优化版） =====
+# ===== Skip First Packet 核心域名 =====
 # 微信核心
 skip-first-packet = weixin.qq.com:443
 skip-first-packet = mp.weixin.qq.com:443
@@ -20,12 +20,6 @@ skip-first-packet = telegram.org:443
 skip-first-packet = t.me:443
 skip-first-packet = cdn.telegram.org:443
 skip-first-packet = file.telegram.org:443
-
-# YouTube 核心
-skip-first-packet = youtube.com:443
-skip-first-packet = www.youtube.com:443
-skip-first-packet = ytimg.com:443
-skip-first-packet = googlevideo.com:443
 
 [host]
 # ===== 腾讯 DoH 分流 =====
@@ -63,7 +57,7 @@ USER-AGENT,WeChat*,PROXY
 IP-ASN,132203,PROXY
 no-resolve
 
-# ===== Telegram/YouTube走日本智能策略 =====
+# ===== Telegram走日本智能策略 =====
 DOMAIN-SUFFIX,telegram.org,日本智能策略
 DOMAIN-SUFFIX,t.me,日本智能策略
 DOMAIN-SUFFIX,telegram.me,日本智能策略
@@ -71,13 +65,6 @@ DOMAIN-SUFFIX,core.telegram.org,日本智能策略
 DOMAIN-SUFFIX,cdn.telegram.org,日本智能策略
 DOMAIN-SUFFIX,telegra.ph,日本智能策略
 DOMAIN-SUFFIX,file.telegram.org,日本智能策略
-
-DOMAIN-SUFFIX,youtube.com,日本智能策略
-DOMAIN-SUFFIX,www.youtube.com,日本智能策略
-DOMAIN-SUFFIX,m.youtube.com,日本智能策略
-DOMAIN-SUFFIX,youtube-nocookie.com,日本智能策略
-DOMAIN-SUFFIX,ytimg.com,日本智能策略
-DOMAIN-SUFFIX,googlevideo.com,日本智能策略
 
 [Rewrite]
 # ===== 保留非广告功能，可扩展 =====
@@ -90,7 +77,7 @@ http-response-jq ^https:\/\/mcsp\.cloudpnr\.com\/api\/miniapp\/popular\/T_MINIAP
 # ===== 保活（定时 + 即时触发）=====
 cron "0 */2 * * *" script-name=trigger-keepalive.js, timeout=10, tag=定时保活
 http-request
-regex=^https?:\/\/(mp\.weixin\.qq\.com|weixin\.qq\.com|wx\.qq\.com|wxapp\.qq\.com|voice\.weixin\.qq\.com|long\.weixin\.qq\.com|short\.weixin\.qq\.com|pay\.weixin\.qq\.com|file\.wx\.qq\.com|qpic\.cn|qlogo\.cn|gtimg\.cn|ugdtimg\.com|telegram\.org|t\.me|telegram\.me|core\.telegram\.org|cdn\.telegram\.org|telegra\.ph|file\.telegram\.org|youtube\.com|www\.youtube\.com|m\.youtube\.com|youtube-nocookie\.com|ytimg\.com|googlevideo\.com)\/
+regex=^https?:\/\/(mp\.weixin\.qq\.com|weixin\.qq\.com|wx\.qq\.com|wxapp\.qq\.com|voice\.weixin\.qq\.com|long\.weixin\.qq\.com|short\.weixin\.qq\.com|pay\.weixin\.qq\.com|file\.wx\.qq\.com|qpic\.cn|qlogo\.cn|gtimg\.cn|ugdtimg\.com|telegram\.org|t\.me|telegram\.me|core\.telegram\.org|cdn\.telegram\.org|telegra\.ph|file\.telegram\.org)\/
 script-name=trigger-keepalive.js
 timeout=6
 tag=即时保活
@@ -119,14 +106,7 @@ const KEEPALIVE_URLS = [
   "https://core.telegram.org/",
   "https://cdn.telegram.org/",
   "https://telegra.ph/",
-  "https://file.telegram.org/",
-  // YouTube
-  "https://www.youtube.com/",
-  "https://youtube.com/",
-  "https://m.youtube.com/",
-  "https://youtube-nocookie.com/",
-  "https://ytimg.com/",
-  "https://googlevideo.com/"
+  "https://file.telegram.org/"
 ];
 const TIMEOUT = 6000;
 const LOG = true;
@@ -178,7 +158,7 @@ async function keepAlive(triggerType = "定时") {
   if (LOG) console.log(`[保活] 执行完成，成功请求数: ${successCount}/${KEEPALIVE_URLS.length}`);
 }
 
-const urlRegex = /^https?:\/\/(mp\.weixin\.qq\.com|weixin\.qq\.com|wx\.qq\.com|wxapp\.qq\.com|voice\.weixin\.qq\.com|long\.weixin\.qq\.com|short\.weixin\.qq\.com|pay\.weixin\.qq\.com|file\.wx\.qq\.com|qpic\.cn|qlogo\.cn|gtimg\.cn|ugdtimg\.com|telegram\.org|t\.me|telegram\.me|core\.telegram\.org|cdn\.telegram\.org|telegra\.ph|file\.telegram\.org|youtube\.com|www\.youtube\.com|m\.youtube\.com|youtube-nocookie\.com|ytimg\.com|googlevideo\.com)\/.+/i;
+const urlRegex = /^https?:\/\/(mp\.weixin\.qq\.com|weixin\.qq\.com|wx\.qq\.com|wxapp\.qq\.com|voice\.weixin\.qq\.com|long\.weixin\.qq\.com|short\.weixin\.qq\.com|pay\.weixin\.qq\.com|file\.wx\.qq\.com|qpic\.cn|qlogo\.cn|gtimg\.cn|ugdtimg\.com|telegram\.org|t\.me|telegram\.me|core\.telegram\.org|cdn\.telegram\.org|telegra\.ph|file\.telegram\.org)\/.+/i;
 
 (async () => {
   if (typeof $request !== "undefined" && $request && $request.url && urlRegex.test($request.url)) {
