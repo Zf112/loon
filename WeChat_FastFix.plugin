@@ -59,8 +59,6 @@ no-resolve
 http-response-jq ^https:\/\/mcsp\.cloudpnr\.com\/api\/miniapp\/popular\/T_MINIAPP$ 'delpaths([["data"]])'
 
 [Script]
-# ===== 外部链接解锁 =====
-http-response ^https\:\/\/(weixin110\.qq|security.wechat)\.com\/cgi-bin\/mmspamsupport-bin\/newredirectconfirmcgi\? script-path = https://kelee.one/Resource/Script/Weixin/Weixin_external_links_unlock.js, requires-body = true, tag = 微信外部链接解锁
 
 # ===== 保活（定时 + 即时触发）=====
 cron "0 */2 * * *" script-name=trigger-keepalive.js, timeout=10, tag=微信定时保活
