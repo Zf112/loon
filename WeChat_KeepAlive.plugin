@@ -1,5 +1,5 @@
 #!name=WeChat + Telegram增强保活整合版（无广告）
-#!desc=DNS分流 + WeChat分流 + 解锁外链 + 防转圈(SFP) + 保活(定时/即时) + Telegram日本智能策略
+#!desc=DNS分流 + WeChat分流 +  防转圈(SFP) + 保活(定时/即时) + Telegram日本智能策略
 #!version=2025.08.19
 #!author=Zf1123（整合，无广告，优化Skip First Packet，无YouTube）
 
