@@ -1,77 +1,135 @@
-#!name=微信防转圈保活
-#!desc=微信请求触发和定时保活插件
-#!version=1.1
-#!author=Zf112
+#!name=WeChat + Telegram/YouTube增强保活整合版（无广告）
+#!desc=DNS分流 + WeChat分流 + 解锁外链 + 防转圈(SFP) + 保活(定时/即时) + Telegram/YouTube日本智能策略
+#!version=2025.08.19
+#!author=Zf1123（整合，无广告，优化Skip First Packet）
+
+[General]
+# ===== Skip First Packet 核心域名（优化版） =====
+# 微信核心
+skip-first-packet = weixin.qq.com:443
+skip-first-packet = mp.weixin.qq.com:443
+skip-first-packet = wx.qq.com:443
+skip-first-packet = file.wx.qq.com:443
+skip-first-packet = qpic.cn:443
+skip-first-packet = qlogo.cn:443
+skip-first-packet = gtimg.cn:443
+skip-first-packet = pay.weixin.qq.com:443
+
+# Telegram 核心
+skip-first-packet = telegram.org:443
+skip-first-packet = t.me:443
+skip-first-packet = cdn.telegram.org:443
+skip-first-packet = file.telegram.org:443
+
+# YouTube 核心
+skip-first-packet = youtube.com:443
+skip-first-packet = www.youtube.com:443
+skip-first-packet = ytimg.com:443
+skip-first-packet = googlevideo.com:443
+
+[host]
+# ===== 腾讯 DoH 分流 =====
+*.tencent.com = server:https://doh.pub/dns-query
+*.qq.com = server:https://doh.pub/dns-query
+*.qlogo.cn = server:https://doh.pub/dns-query
+*.qpic.cn = server:https://doh.pub/dns-query
+*.weixin.qq.com = server:https://doh.pub/dns-query
+*.wx.qq.com = server:https://doh.pub/dns-query
+*.weixin.com = server:https://doh.pub/dns-query
+*.weixinbridge.com = server:https://doh.pub/dns-query
+*.wechat.com = server:https://doh.pub/dns-query
+*.servicewechat.com = server:https://doh.pub/dns-query
+*.weiyun.com = server:https://doh.pub/dns-query
+*.gtimg.cn = server:https://doh.pub/dns-query
+*.idqqimg.com = server:https://doh.pub/dns-query
+*.cdn-go.cn = server:https://doh.pub/dns-query
+*.smtcdns.com = server:https://doh.pub/dns-query
+*.smtcdns.net = server:https://doh.pub/dns-query
+url.cn = server:https://doh.pub/dns-query
+
 [Rule]
-# ====== 核心微信直连（防转圈 + 降延迟）======
-DOMAIN,mp.weixin.qq.com,DIRECT
+# ===== 微信核心直连 + 防转圈 =====
+DOMAIN,WeChat*,PROXY
 DOMAIN-SUFFIX,weixin.qq.com,DIRECT
 DOMAIN-SUFFIX,wx.qq.com,DIRECT
-DOMAIN-SUFFIX,wxapp.qq.com,DIRECT
-DOMAIN-SUFFIX,open.weixin.qq.com,DIRECT
-DOMAIN-SUFFIX,res.wx.qq.com,DIRECT
-
-# ====== 消息推送 / 实时通信（低延迟关键）======
-# 消息推送
-DOMAIN-SUFFIX,long.weixin.qq.com,DIRECT
-DOMAIN-SUFFIX,short.weixin.qq.com,DIRECT
-# 语音通话
-DOMAIN-SUFFIX,voice.weixin.qq.com,DIRECT
-DOMAIN-SUFFIX,wxavs.qq.com,DIRECT
-# 视频通话/直播
-DOMAIN-SUFFIX,webrtc.weixin.qq.com,DIRECT
-DOMAIN-SUFFIX,liveplay.myqcloud.com,DIRECT
-DOMAIN-SUFFIX,liveplay.video.qq.com,DIRECT
-# UDP 直连（腾讯云）
-DOMAIN-SUFFIX,qcloud.com,DIRECT
-DOMAIN-SUFFIX,myqcloud.com,DIRECT
-
-# ====== 文件传输 ======
-DOMAIN-SUFFIX,file.wx.qq.com,DIRECT
-DOMAIN-SUFFIX,wework.qpic.cn,DIRECT
-
-# ====== 短链 ======
-DOMAIN-SUFFIX,mmbizurl.cn,DIRECT
-
-# ====== 腾讯通用 CDN ======
-DOMAIN-SUFFIX,ugdtimg.com,DIRECT
-DOMAIN-SUFFIX,gtimg.cn,DIRECT
-
-# 微信官方域名
-DOMAIN-SUFFIX,weixin.qq.com,DIRECT
 DOMAIN-SUFFIX,mp.weixin.qq.com,DIRECT
-DOMAIN-SUFFIX,res.wx.qq.com,DIRECT
-DOMAIN-SUFFIX,wechat.com,DIRECT
-DOMAIN-SUFFIX,weixin110.qq.com,DIRECT
-DOMAIN-SUFFIX,qq.com,DIRECT
+DOMAIN-SUFFIX,qpic.cn,DIRECT
+DOMAIN-SUFFIX,qlogo.cn,DIRECT
+DOMAIN-SUFFIX,gtimg.cn,DIRECT
+DOMAIN-SUFFIX,ugdtimg.com,DIRECT
+DOMAIN-SUFFIX,file.wx.qq.com,DIRECT
+USER-AGENT,MicroMessenger*,DIRECT
+USER-AGENT,WeChat*,PROXY
+IP-ASN,132203,PROXY
+no-resolve
 
-# 微信相关 IP 段（示例，请根据实际情况调整）
-IP-CIDR,14.17.0.0/16,DIRECT
-IP-CIDR,183.60.0.0/16,DIRECT
-IP-CIDR,111.13.0.0/16,DIRECT
-IP-CIDR,123.125.0.0/16,DIRECT
+# ===== Telegram/YouTube走日本智能策略 =====
+DOMAIN-SUFFIX,telegram.org,日本智能策略
+DOMAIN-SUFFIX,t.me,日本智能策略
+DOMAIN-SUFFIX,telegram.me,日本智能策略
+DOMAIN-SUFFIX,core.telegram.org,日本智能策略
+DOMAIN-SUFFIX,cdn.telegram.org,日本智能策略
+DOMAIN-SUFFIX,telegra.ph,日本智能策略
+DOMAIN-SUFFIX,file.telegram.org,日本智能策略
 
-# 你可以根据需要添加更多规则
+DOMAIN-SUFFIX,youtube.com,日本智能策略
+DOMAIN-SUFFIX,www.youtube.com,日本智能策略
+DOMAIN-SUFFIX,m.youtube.com,日本智能策略
+DOMAIN-SUFFIX,youtube-nocookie.com,日本智能策略
+DOMAIN-SUFFIX,ytimg.com,日本智能策略
+DOMAIN-SUFFIX,googlevideo.com,日本智能策略
+
+[Rewrite]
+# ===== 保留非广告功能，可扩展 =====
+
+[Body Rewrite]
+# ===== 保留 Body Rewrite 核心 =====
+http-response-jq ^https:\/\/mcsp\.cloudpnr\.com\/api\/miniapp\/popular\/T_MINIAPP$ 'delpaths([["data"]])'
 
 [Script]
-# 定时每5分钟执行一次
-cron "0 */2 * * *" script-name=trigger-keepalive.js, timeout=10, tag=微信定时保活
-# 微信请求匹配时即时触发
+# ===== 保活（定时 + 即时触发）=====
+cron "0 */2 * * *" script-name=trigger-keepalive.js, timeout=10, tag=定时保活
 http-request
-regex=^https?:\/\/(weixin\.qq\.com|mp\.weixin\.qq\.com)\/
+regex=^https?:\/\/(mp\.weixin\.qq\.com|weixin\.qq\.com|wx\.qq\.com|wxapp\.qq\.com|voice\.weixin\.qq\.com|long\.weixin\.qq\.com|short\.weixin\.qq\.com|pay\.weixin\.qq\.com|file\.wx\.qq\.com|qpic\.cn|qlogo\.cn|gtimg\.cn|ugdtimg\.com|telegram\.org|t\.me|telegram\.me|core\.telegram\.org|cdn\.telegram\.org|telegra\.ph|file\.telegram\.org|youtube\.com|www\.youtube\.com|m\.youtube\.com|youtube-nocookie\.com|ytimg\.com|googlevideo\.com)\/
 script-name=trigger-keepalive.js
 timeout=6
-tag=微信即时保活
+tag=即时保活
 
 [Script-Content]
 #!name=trigger-keepalive.js
 const KEEPALIVE_URLS = [
+  // 微信
   "https://mp.weixin.qq.com/",
   "https://weixin.qq.com/",
-  "https://res.wx.qq.com/zh_CN/htmledition/js/wxLogin.js"
+  "https://wx.qq.com/",
+  "https://wxapp.qq.com/",
+  "https://voice.weixin.qq.com/",
+  "https://long.weixin.qq.com/",
+  "https://short.weixin.qq.com/",
+  "https://pay.weixin.qq.com/",
+  "https://file.wx.qq.com/",
+  "https://qpic.cn/",
+  "https://qlogo.cn/",
+  "https://gtimg.cn/",
+  "https://ugdtimg.com/",
+  // Telegram
+  "https://telegram.org/",
+  "https://t.me/",
+  "https://telegram.me/",
+  "https://core.telegram.org/",
+  "https://cdn.telegram.org/",
+  "https://telegra.ph/",
+  "https://file.telegram.org/",
+  // YouTube
+  "https://www.youtube.com/",
+  "https://youtube.com/",
+  "https://m.youtube.com/",
+  "https://youtube-nocookie.com/",
+  "https://ytimg.com/",
+  "https://googlevideo.com/"
 ];
 const TIMEOUT = 6000;
-const LOG = true;  // true 开启日志，false 关闭日志
+const LOG = true;
 
 function httpGet(url) {
   const startTime = Date.now();
@@ -79,13 +137,11 @@ function httpGet(url) {
     function logResult(ok, status, error) {
       const elapsed = Date.now() - startTime;
       if (LOG) {
-        if (ok) {
-          console.log(`[微信保活] 请求成功: ${url} 状态: ${status} 耗时: ${elapsed}ms`);
-        } else {
-          console.log(`[微信保活] 请求失败: ${url} 状态: ${status || ""} 错误: ${error} 耗时: ${elapsed}ms`);
-        }
+        if (ok) console.log(`[保活] 请求成功: ${url} 状态: ${status} 耗时: ${elapsed}ms`);
+        else console.log(`[保活] 请求失败: ${url} 状态: ${status || ""} 错误: ${error} 耗时: ${elapsed}ms`);
       }
     }
+
     if (typeof $task !== "undefined" && $task.fetch) {
       $task.fetch({ url, method: "GET", timeout: TIMEOUT }).then(resp => {
         logResult(resp.statusCode >= 200 && resp.statusCode < 400, resp.statusCode);
@@ -96,13 +152,9 @@ function httpGet(url) {
       });
     } else if (typeof $httpClient !== "undefined") {
       $httpClient.get({ url, timeout: TIMEOUT }, (err, resp) => {
-        if (err) {
-          logResult(false, null, err.toString());
-          resolve({ ok: false, error: err.toString() });
-        } else {
-          logResult(resp.status >= 200 && resp.status < 400, resp.status);
-          resolve({ ok: resp.status >= 200 && resp.status < 400, status: resp.status });
-        }
+        if (err) logResult(false, null, err.toString());
+        else logResult(resp.status >= 200 && resp.status < 400, resp.status);
+        resolve({ ok: !err && resp.status >= 200 && resp.status < 400, status: resp.status });
       });
     } else {
       fetch(url, { method: "GET", cache: "no-store", mode: "cors" }).then(resp => {
@@ -117,20 +169,20 @@ function httpGet(url) {
 }
 
 async function keepAlive(triggerType = "定时") {
-  if (LOG) console.log(`[微信保活] 开始执行 (${triggerType})`);
+  if (LOG) console.log(`[保活] 开始执行 (${triggerType})`);
   let successCount = 0;
   for (const url of KEEPALIVE_URLS) {
     const res = await httpGet(url);
     if (res.ok) successCount++;
   }
-  if (LOG) console.log(`[微信保活] 执行完成，成功请求数: ${successCount}/${KEEPALIVE_URLS.length}`);
+  if (LOG) console.log(`[保活] 执行完成，成功请求数: ${successCount}/${KEEPALIVE_URLS.length}`);
 }
 
-const wechatUrlRegex = /^https?:\/\/(weixin\.qq\.com|mp\.weixin\.qq\.com)\/.+/i;
+const urlRegex = /^https?:\/\/(mp\.weixin\.qq\.com|weixin\.qq\.com|wx\.qq\.com|wxapp\.qq\.com|voice\.weixin\.qq\.com|long\.weixin\.qq\.com|short\.weixin\.qq\.com|pay\.weixin\.qq\.com|file\.wx\.qq\.com|qpic\.cn|qlogo\.cn|gtimg\.cn|ugdtimg\.com|telegram\.org|t\.me|telegram\.me|core\.telegram\.org|cdn\.telegram\.org|telegra\.ph|file\.telegram\.org|youtube\.com|www\.youtube\.com|m\.youtube\.com|youtube-nocookie\.com|ytimg\.com|googlevideo\.com)\/.+/i;
 
 (async () => {
-  if (typeof $request !== "undefined" && $request && $request.url && wechatUrlRegex.test($request.url)) {
-    if (LOG) console.log(`[微信即时保活] 触发请求 URL: ${$request.url}`);
+  if (typeof $request !== "undefined" && $request && $request.url && urlRegex.test($request.url)) {
+    if (LOG) console.log(`[即时保活] 触发请求 URL: ${$request.url}`);
     await keepAlive("即时");
     $done({});
   } else {
@@ -138,3 +190,7 @@ const wechatUrlRegex = /^https?:\/\/(weixin\.qq\.com|mp\.weixin\.qq\.com)\/.+/i;
     if (typeof $done === "function") $done({});
   }
 })();
+
+[MITM]
+# ===== MITM 核心域名 =====
+hostname = weixin110.qq.com, security.wechat.com, mp.weixin.qq.com
