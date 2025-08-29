@@ -13,7 +13,8 @@ skip-first-packet = qlogo.cn:443
 skip-first-packet = gtimg.cn:443
 skip-first-packet = ugdtimg.com:443
 skip-first-packet = file.wx.qq.com:443
-
+# 跳过首包，优化TLS连接延迟
+skip-first-packet = true
 [host]
 # > 腾讯 DoH 分流（保持原有 DoH 分流）
 *.tencent.com = server:https://doh.pub/dns-query
@@ -49,11 +50,16 @@ USER-AGENT,MicroMessenger*,DIRECT
 USER-AGENT,WeChat*,PROXY
 IP-ASN,132203,PROXY
 no-resolve
+# ===== 微信核心直连，加速消息送达 =====
+DOMAIN,mp.weixin.qq.com,DIRECT
+DOMAIN-SUFFIX,weixin.qq.com,DIRECT
+DOMAIN-SUFFIX,wechat.com,DIRECT
+DOMAIN-SUFFIX,qq.com,DIRECT
 
-[Rewrite]
-# ===== 保留重写规则中非广告功能 =====
-# 无广告规则，保持可扩展
-
+# 视频号/图片 CDN（直连）
+DOMAIN-SUFFIX,wx.qlogo.cn,DIRECT
+DOMAIN-SUFFIX,wx.qpic.cn,DIRECT
+DOMAIN-SUFFIX,video.qq.com,DIRECT
 [Body Rewrite]
 # ===== 保留 Body Rewrite 核心 =====
 http-response-jq ^https:\/\/mcsp\.cloudpnr\.com\/api\/miniapp\/popular\/T_MINIAPP$ 'delpaths([["data"]])'
