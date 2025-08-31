@@ -1,0 +1,14 @@
+#!name=WeChat_BlockUpdate
+#!desc=屏蔽微信内置更新请求
+#!author=ChatGPT
+#!version=1.0
+
+[Rule]
+DOMAIN-SUFFIX,dldir1.qq.com,REJECT
+DOMAIN-SUFFIX,dldir1v6.qq.com,REJECT
+DOMAIN-SUFFIX,dldir.qq.com,REJECT
+DOMAIN-SUFFIX,dldir2.qq.com,REJECT
+
+[Rewrite]
+# 拦截微信更新下载请求
+^https?:\/\/dldir\d?\.qq\.com\/.*\.(apk|ipa)$  - REJECT
