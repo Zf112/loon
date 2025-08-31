@@ -1,14 +1,8 @@
-#!name=WeChat_BlockUpdate
-#!desc=屏蔽微信内置更新请求
-#!author=ChatGPT
-#!version=1.0
-
-[Rule]
-DOMAIN-SUFFIX,dldir1.qq.com,REJECT
-DOMAIN-SUFFIX,dldir1v6.qq.com,REJECT
-DOMAIN-SUFFIX,dldir.qq.com,REJECT
-DOMAIN-SUFFIX,dldir2.qq.com,REJECT
+[MITM]
+hostname = p*.itunes.apple.com, iosapps.itunes.apple.com, osxapps.itunes.apple.com
 
 [Rewrite]
-# 拦截微信更新下载请求
-^https?:\/\/dldir\d?\.qq\.com\/.*\.(apk|ipa)$  - REJECT
+# 屏蔽 App Store 下载应用/更新请求
+^https?:\/\/p\d\.itunes\.apple\.com\/.*\.ipa$  - REJECT
+^https?:\/\/iosapps\.itunes\.apple\.com\/.*   - REJECT
+^https?:\/\/osxapps\.itunes\.apple\.com\/.*   - REJECT
